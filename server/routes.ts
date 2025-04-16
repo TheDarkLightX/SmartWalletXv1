@@ -28,8 +28,26 @@ function validatePositiveId(id: string): { valid: boolean, value?: number, messa
   return { valid: true, value: numericId };
 }
 
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getCurrentUser,
+  requireAuth,
+  requestPasswordReset,
+  resetPassword
+} from './auth';
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
+  
+  // Authentication routes
+  router.post('/register', registerUser);
+  router.post('/login', loginUser);
+  router.post('/logout', logoutUser);
+  router.get('/current-user', getCurrentUser);
+  router.post('/request-password-reset', requestPasswordReset);
+  router.post('/reset-password', resetPassword);
 
   // User routes
   router.post("/users", async (req: Request, res: Response) => {

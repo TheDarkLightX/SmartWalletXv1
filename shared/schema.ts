@@ -9,8 +9,10 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   walletAddress: text("wallet_address"),
   email: text("email"),
+  role: text("role").default("user"), // 'user', 'admin'
   securityScore: integer("security_score").default(0),
   is2faEnabled: boolean("is_2fa_enabled").default(false),
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -98,6 +100,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   email: true,
+  role: true,
+  walletAddress: true,
+  lastLogin: true
 });
 
 export const insertWalletSchema = createInsertSchema(wallets).pick({
