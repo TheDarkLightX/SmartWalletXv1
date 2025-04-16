@@ -1,17 +1,32 @@
+/**
+ * DeFi Protocols Library
+ * 
+ * This module provides interfaces, utilities, and implementations for interacting with 
+ * various DeFi protocols on both PulseChain and Ethereum networks.
+ * 
+ * It includes:
+ * - Protocol type definitions and interfaces
+ * - Protocol implementations for major platforms
+ * - Strategy action types and implementations
+ * - Helper functions for protocol interactions
+ */
+
 import { ethers } from "ethers";
 import { getProvider, getWallet } from "./ethers";
 import { pulseChainContractAddresses } from "./contracts";
 
-// Protocol Types
+/**
+ * Enum defining the types of DeFi protocols supported by the application
+ */
 export enum DeFiProtocolType {
-  DEX = "DEX",                   // Decentralized Exchanges
-  LENDING = "LENDING",           // Lending/Borrowing Platforms
-  YIELD_AGGREGATOR = "YIELD_AGGREGATOR", // Yield Aggregators
-  LIQUID_STAKING = "LIQUID_STAKING", // Liquid Staking
+  DEX = "DEX",                   // Decentralized Exchanges (like PulseX, Uniswap)
+  LENDING = "LENDING",           // Lending/Borrowing Platforms (like Aave, Phiat)
+  YIELD_AGGREGATOR = "YIELD_AGGREGATOR", // Yield Aggregators (like PulseDAO, Yearn)
+  LIQUID_STAKING = "LIQUID_STAKING", // Liquid Staking (like Hedron, Lido)
   DERIVATIVES = "DERIVATIVES",    // Derivatives Platforms
   OPTIONS = "OPTIONS",           // Options Protocols
   INSURANCE = "INSURANCE",       // Insurance Protocols
-  LAUNCHPAD = "LAUNCHPAD"        // Token Launchpads
+  LAUNCHPAD = "LAUNCHPAD"        // Token Launchpads (like MaximusDAO)
 }
 
 // Protocol Interface
