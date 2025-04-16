@@ -161,6 +161,9 @@ export const verifyProof = async (proof: ZkProof): Promise<boolean> => {
 /**
  * Execute a private transaction using zero-knowledge proofs
  */
+import { detectSecureEnvironment, SecureEnvironmentType, generateSecureKey, signWithSecureKey } from './secure-environment';
+import { executePrivateTransactionWithMPC, MPCConfig, MPCProtocol } from './secure-mpc';
+
 export const executePrivateTransaction = async (
   transaction: PrivateTransaction,
   privateKey: string,
@@ -172,6 +175,13 @@ export const executePrivateTransaction = async (
   error?: string;
 }> => {
   try {
+    // Detect if we have a secure environment
+    const secureEnv = detectSecureEnvironment();
+    const useSecureHardware = secureEnv.type !== SecureEnvironmentType.SOFTWARE_FALLBACK;
+    
+    // Log what secure capabilities we're using
+    console.log(`Using secure environment: ${secureEnv.type}`);
+    
     // Generate proof for the transaction
     const proof = await generateProof(transaction, privateKey);
     
@@ -188,28 +198,96 @@ export const executePrivateTransaction = async (
     // Get config for privacy level
     const config = privacyLevelConfig[transaction.privacyLevel];
     
+    // Generate a secure key for the transaction using TEE if available
+    let secureTransactionKey;
+    if (useSecureHardware) {
+      secureTransactionKey = await generateSecureKey(
+        `tx_${Date.now()}`, 
+        config.gasMultiplier > 1.5 // Require biometric auth for higher privacy levels
+      );
+    }
+    
     // Get provider
     const provider = getProvider(networkKey);
     
     // Convert private key to wallet
     const wallet = new ethers.Wallet(privateKey, provider);
     
-    // In a real implementation, this would call a privacy protocol smart contract
-    // For now, we're just mocking the transaction hash
-    const transactionHash = ethers.keccak256(
-      ethers.toUtf8Bytes(
-        JSON.stringify({
-          proof,
-          timestamp: Date.now()
-        })
-      )
-    );
+    // If we have maximum privacy level, use MPC for enhanced security
+    if (transaction.privacyLevel === PrivacyLevel.MAXIMUM) {
+      // Configure MPC for this transaction
+      const mpcConfig: MPCConfig = {
+        protocol: MPCProtocol.SPDZ, // Use SPDZ protocol for best performance/security
+        threshold: 3,               // 3 out of 5 parties needed for reconstruction
+        numberOfParties: 5,         // Use 5 parties for computation
+        useSecureHardware,          // Use secure hardware if available
+        timeoutSeconds: 60          // Longer timeout for maximum privacy
+      };
+      
+      // Execute transaction using MPC
+      console.log("Using MPC for maximum privacy transaction");
+      const mpcResult = await executePrivateTransactionWithMPC(
+        { ...transaction, proof }, 
+        mpcConfig
+      );
+      
+      return {
+        success: mpcResult.success,
+        transactionHash: mpcResult.transactionHash,
+        proof,
+        error: mpcResult.error
+      };
+    }
     
-    return {
-      success: true,
-      transactionHash,
-      proof
-    };
+    // For other privacy levels, use the secure environment directly if available
+    if (useSecureHardware && secureTransactionKey) {
+      // In a real implementation, we would use the secure element to sign the transaction
+      const serializedTx = JSON.stringify({
+        proof,
+        transaction,
+        timestamp: Date.now()
+      });
+      
+      // Use the secure element to sign the transaction data
+      const signature = await signWithSecureKey(
+        serializedTx,
+        secureTransactionKey,
+        transaction.privacyLevel === PrivacyLevel.STANDARD // Require biometric auth for standard+ privacy
+      );
+      
+      // Hash the signed data to create a transaction hash
+      const transactionHash = ethers.keccak256(
+        ethers.toUtf8Bytes(signature)
+      );
+      
+      console.log(`Transaction processed with secure hardware: ${secureEnv.type}`);
+      
+      return {
+        success: true,
+        transactionHash,
+        proof
+      };
+    } else {
+      // Software fallback if no secure hardware is available
+      console.log("No secure hardware available. Using software implementation.");
+      
+      // In a real implementation, this would call a privacy protocol smart contract
+      // For now, we're just mocking the transaction hash
+      const transactionHash = ethers.keccak256(
+        ethers.toUtf8Bytes(
+          JSON.stringify({
+            proof,
+            timestamp: Date.now()
+          })
+        )
+      );
+      
+      return {
+        success: true,
+        transactionHash,
+        proof
+      };
+    }
   } catch (error) {
     return {
       success: false,

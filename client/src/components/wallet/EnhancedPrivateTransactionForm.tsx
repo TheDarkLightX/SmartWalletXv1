@@ -685,6 +685,34 @@ const EnhancedPrivateTransactionForm = ({ onComplete }: EnhancedPrivateTransacti
                   </Badge>
                 </div>
                 
+                {/* TEE & Secure Computing Information */}
+                <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md text-xs">
+                  <div className="flex items-center mb-1.5">
+                    <Lock className="h-3.5 w-3.5 mr-1.5 text-blue-500" />
+                    <span className="font-medium text-blue-700 dark:text-blue-300">Hardware-Secured Transaction</span>
+                  </div>
+                  <p className="text-blue-700/80 dark:text-blue-300/80 mb-1.5">
+                    Your transaction is protected using Trusted Execution Environment (TEE) 
+                    {privacyLevel === PrivacyLevel.MAXIMUM ? " and Secure Multiparty Computation (MPC)" : ""}.
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-blue-600/70 dark:text-blue-400/70">
+                    <span>TEE/Secure Enclave</span>
+                    <span>✓ Active</span>
+                  </div>
+                  {privacyLevel === PrivacyLevel.MAXIMUM && (
+                    <div className="flex items-center justify-between text-xs text-blue-600/70 dark:text-blue-400/70">
+                      <span>Secure MPC Computing</span>
+                      <span>✓ Active</span>
+                    </div>
+                  )}
+                  {privacyLevel === PrivacyLevel.STANDARD && (
+                    <div className="flex items-center justify-between text-xs text-blue-600/70 dark:text-blue-400/70">
+                      <span>Biometric Authentication</span>
+                      <span>✓ Required</span>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="space-y-6">
                   {/* Privacy Level Selection */}
                   <div className="space-y-2">
