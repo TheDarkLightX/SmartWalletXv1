@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { NetworkSelector } from "@/components/network/NetworkSelector";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -48,6 +49,8 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <NetworkSelector />
+            
             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-600">
               <i className="ri-notification-3-line text-xl"></i>
             </Button>
