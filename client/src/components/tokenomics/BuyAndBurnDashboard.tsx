@@ -1,317 +1,201 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, BarChart3, Flame, Trophy, TrendingUp, ArrowRight } from "lucide-react";
-import { useNetwork } from '@/hooks/useNetwork';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { tokenomicsConfig } from '@/lib/tokenomics';
-import { pulseChainContractAddresses } from '@/lib/contracts';
 
-// Types for burn statistics
-interface BurnStatistic {
-  timestamp: number;
-  plsBurned: number;
-  plsxBurned: number;
-  plsValue: number;
-  plsxValue: number;
-  totalValue: number;
-}
-
-interface BuyAndBurnDashboardProps {
-  walletAddress?: string;
-}
-
-export const BuyAndBurnDashboard = ({ walletAddress }: BuyAndBurnDashboardProps) => {
-  const { currentNetwork, nativeCurrencySymbol } = useNetwork();
-  const [activeTab, setActiveTab] = useState('statistics');
+export const BuyAndBurnDashboard = () => {
+  const [activeTab, setActiveTab] = useState("distribution");
   
-  // Mock burn statistics (in a real implementation, this would come from the blockchain)
-  const [burnStats, setBurnStats] = useState<{
-    daily: BurnStatistic[];
-    weekly: BurnStatistic[];
-    monthly: BurnStatistic[];
-    allTime: {
-      plsBurned: number;
-      plsxBurned: number;
-      totalValue: number;
-    };
-  }>({
-    daily: [],
-    weekly: [],
-    monthly: [],
-    allTime: {
-      plsBurned: 14560,
-      plsxBurned: 980000,
-      totalValue: 243500
-    }
-  });
+  // Mock data for distribution pie chart
+  const distributionData = [
+    { name: 'No Expectations Fund', value: tokenomicsConfig.noExpectationsFundPercentage },
+    { name: 'Buy & Burn', value: tokenomicsConfig.buyAndBurnPercentage },
+  ];
   
-  // Format large numbers
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(2) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(2) + 'K';
-    } else {
-      return num.toString();
-    }
+  // Mock data for burn allocation
+  const burnAllocationData = [
+    { name: 'PLS', value: 60 },
+    { name: 'PulseX', value: 40 },
+  ];
+  
+  // Mock data for burn history
+  const burnHistoryData = [
+    { month: 'Jan', amount: 12500 },
+    { month: 'Feb', amount: 14200 },
+    { month: 'Mar', amount: 18900 },
+    { month: 'Apr', amount: 23400 },
+    { month: 'May', amount: 28100 },
+    { month: 'Jun', amount: 34200 },
+  ];
+  
+  // Colors for pie charts
+  const DISTRIBUTION_COLORS = ['#6366f1', '#a855f7']; // indigo, purple
+  const BURN_ALLOCATION_COLORS = ['#ec4899', '#f97316']; // pink, orange
+  
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString()}`;
   };
-  
-  // In a real implementation, this would fetch actual burn statistics
-  useEffect(() => {
-    // Simulate API call to get burn statistics
-    const generateMockData = () => {
-      const daily = Array.from({ length: 24 }, (_, i) => ({
-        timestamp: Date.now() - (23 - i) * 60 * 60 * 1000,
-        plsBurned: Math.random() * 15 + 5,
-        plsxBurned: Math.random() * 1200 + 300,
-        plsValue: Math.random() * 100 + 30,
-        plsxValue: Math.random() * 120 + 40,
-        get totalValue() { return this.plsValue + this.plsxValue; }
-      }));
-      
-      const weekly = Array.from({ length: 7 }, (_, i) => ({
-        timestamp: Date.now() - (6 - i) * 24 * 60 * 60 * 1000,
-        plsBurned: Math.random() * 120 + 50,
-        plsxBurned: Math.random() * 9000 + 3000,
-        plsValue: Math.random() * 700 + 250,
-        plsxValue: Math.random() * 800 + 300,
-        get totalValue() { return this.plsValue + this.plsxValue; }
-      }));
-      
-      const monthly = Array.from({ length: 30 }, (_, i) => ({
-        timestamp: Date.now() - (29 - i) * 24 * 60 * 60 * 1000,
-        plsBurned: Math.random() * 500 + 200,
-        plsxBurned: Math.random() * 35000 + 10000,
-        plsValue: Math.random() * 3000 + 1000,
-        plsxValue: Math.random() * 3200 + 1200,
-        get totalValue() { return this.plsValue + this.plsxValue; }
-      }));
-      
-      setBurnStats({
-        daily,
-        weekly,
-        monthly,
-        allTime: {
-          plsBurned: 14560,
-          plsxBurned: 980000,
-          totalValue: 243500
-        }
-      });
-    };
-    
-    generateMockData();
-  }, []);
-  
-  // Calculate total burned for the most recent period
-  const calculateRecentBurned = (period: 'daily' | 'weekly' | 'monthly') => {
-    if (!burnStats[period].length) return { pls: 0, plsx: 0, value: 0 };
-    
-    const recentStats = burnStats[period];
-    const totalPlsBurned = recentStats.reduce((sum, stat) => sum + stat.plsBurned, 0);
-    const totalPlsxBurned = recentStats.reduce((sum, stat) => sum + stat.plsxBurned, 0);
-    const totalValue = recentStats.reduce((sum, stat) => sum + stat.totalValue, 0);
-    
-    return {
-      pls: totalPlsBurned,
-      plsx: totalPlsxBurned,
-      value: totalValue
-    };
-  };
-  
-  const todayBurned = calculateRecentBurned('daily');
-  const weekBurned = calculateRecentBurned('weekly');
-  const monthBurned = calculateRecentBurned('monthly');
-  
-  // Format buyback percentage for display
-  const buybackPercentage = (tokenomicsConfig.buyAndBurnPercentage * 100).toFixed(0);
   
   return (
-    <Card className="w-full">
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-primary" />
-          PLS/PLSX Buy & Burn Dashboard
-        </CardTitle>
+        <CardTitle>Buy & Burn Dashboard</CardTitle>
         <CardDescription>
-          {buybackPercentage}% of all transaction fees are used to buy and burn PLS and PLSX tokens,
-          reducing supply and creating continuous buying pressure
+          Monitoring the automatic purchase and burning of tokens
         </CardDescription>
       </CardHeader>
-      
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="statistics">Statistics</TabsTrigger>
-            <TabsTrigger value="mechanism">How It Works</TabsTrigger>
+        <Tabs defaultValue="distribution" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="distribution">Distribution</TabsTrigger>
+            <TabsTrigger value="allocation">Burn Allocation</TabsTrigger>
+            <TabsTrigger value="history">Burn History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="statistics" className="space-y-6">
-            {/* Summary cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                    All-Time Burned
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLS:</span>
-                      <span className="font-semibold">{formatNumber(burnStats.allTime.plsBurned)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLSX:</span>
-                      <span className="font-semibold">{formatNumber(burnStats.allTime.plsxBurned)}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t mt-1">
-                      <span className="text-sm text-muted-foreground">Value:</span>
-                      <span className="font-semibold">${formatNumber(burnStats.allTime.totalValue)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-500" />
-                    This Month
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLS:</span>
-                      <span className="font-semibold">{formatNumber(monthBurned.pls)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLSX:</span>
-                      <span className="font-semibold">{formatNumber(monthBurned.plsx)}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t mt-1">
-                      <span className="text-sm text-muted-foreground">Value:</span>
-                      <span className="font-semibold">${formatNumber(monthBurned.value)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-blue-500" />
-                    Past 24 Hours
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLS:</span>
-                      <span className="font-semibold">{formatNumber(todayBurned.pls)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">PLSX:</span>
-                      <span className="font-semibold">{formatNumber(todayBurned.plsx)}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t mt-1">
-                      <span className="text-sm text-muted-foreground">Value:</span>
-                      <span className="font-semibold">${formatNumber(todayBurned.value)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <TabsContent value="distribution" className="space-y-4">
+            <div className="pt-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="h-[240px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {distributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </motion.div>
             </div>
             
-            {/* Burn chart would go here - simplified for demo */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Burn Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px] flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Burn chart visualization appears here
-                    </p>
-                  </div>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div className="text-indigo-700 dark:text-indigo-400 font-medium mb-1 text-sm">No Expectations Fund</div>
+                <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{tokenomicsConfig.noExpectationsFundPercentage}%</div>
+                <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-1">
+                  Funds developers without requiring continued development
                 </div>
-              </CardContent>
-            </Card>
-            
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm">
-                View All Burn Transactions <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                <div className="text-purple-700 dark:text-purple-400 font-medium mb-1 text-sm">Buy & Burn</div>
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">{tokenomicsConfig.buyAndBurnPercentage}%</div>
+                <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
+                  Automatic purchase and burning of tokens
+                </div>
+              </div>
             </div>
           </TabsContent>
           
-          <TabsContent value="mechanism" className="space-y-6">
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-4">
-                <h3 className="text-sm font-medium mb-2">How Buy & Burn Works</h3>
-                <ol className="text-sm space-y-3 pl-6 list-decimal">
-                  <li>
-                    <strong>{buybackPercentage}% of all transaction fees</strong> collected by the wallet
-                    are allocated to the Buy & Burn mechanism.
-                  </li>
-                  <li>
-                    When enough fees accumulate, the smart contract automatically connects to 
-                    <strong> PulseX</strong> to purchase PLS and PLSX tokens.
-                  </li>
-                  <li>
-                    Purchased tokens are then sent to a <strong>burn address</strong> (0x000...dead) 
-                    removing them permanently from circulation.
-                  </li>
-                  <li>
-                    This creates <strong>deflationary pressure</strong> on both PLS and PLSX,
-                    potentially benefiting all holders over time.
-                  </li>
-                </ol>
-              </div>
-              
-              <div className="rounded-lg bg-muted p-4">
-                <h3 className="text-sm font-medium mb-2">Buy & Burn Distribution</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">PLS Burned:</span>
-                    <span className="text-sm font-medium">50%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">PLSX Burned:</span>
-                    <span className="text-sm font-medium">50%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    The distribution is balanced to support both the PulseChain's native token (PLS)
-                    and the leading DEX token (PLSX), creating a positive feedback loop for the entire ecosystem.
-                  </p>
+          <TabsContent value="allocation" className="space-y-4">
+            <div className="pt-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="h-[240px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={burnAllocationData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {burnAllocationData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={BURN_ALLOCATION_COLORS[index % BURN_ALLOCATION_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </motion.div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800">
+                <div className="text-pink-700 dark:text-pink-400 font-medium mb-1 text-sm">PLS Token</div>
+                <div className="text-2xl font-bold text-pink-700 dark:text-pink-400">60%</div>
+                <div className="text-xs text-pink-600/70 dark:text-pink-400/70 mt-1">
+                  Allocation of funds for buying and burning PLS
                 </div>
               </div>
               
-              <div className="rounded-lg bg-muted p-4">
-                <h3 className="text-sm font-medium mb-2">Benefits</h3>
-                <ul className="text-sm space-y-2 pl-6 list-disc">
-                  <li>Creates constant buying pressure for PLS and PLSX</li>
-                  <li>Reduces token supply over time, potentially increasing scarcity</li>
-                  <li>Directly ties wallet usage volume to ecosystem support</li>
-                  <li>Transparent and algorithmic process with no human intervention</li>
-                  <li>Aligns incentives between wallet users and PulseChain ecosystem participants</li>
-                </ul>
+              <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800">
+                <div className="text-orange-700 dark:text-orange-400 font-medium mb-1 text-sm">PulseX Token</div>
+                <div className="text-2xl font-bold text-orange-700 dark:text-orange-400">40%</div>
+                <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">
+                  Allocation of funds for buying and burning PulseX
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <div className="pt-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="h-[300px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={burnHistoryData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `$${value/1000}k`} />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Legend />
+                    <Bar dataKey="amount" name="Tokens Burned (USD Value)" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </motion.div>
+              
+              <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-blue-700 dark:text-blue-400 font-medium text-sm">Total Burned (2024)</div>
+                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">$131,300</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-blue-700 dark:text-blue-400 font-medium text-sm">Monthly Average</div>
+                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">$21,883</div>
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-      
-      <CardFooter className="text-xs text-muted-foreground">
-        <p>
-          Every transaction with our wallet directly contributes to strengthening the PulseChain ecosystem
-          through the automatic Buy & Burn mechanism.
-        </p>
-      </CardFooter>
     </Card>
   );
 };

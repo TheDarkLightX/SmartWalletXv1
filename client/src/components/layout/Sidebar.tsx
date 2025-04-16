@@ -59,6 +59,15 @@ const Sidebar = ({ onClose }: SidebarProps) => {
           </a>
         </Link>
         
+        <Link href="/tokenomics">
+          <a className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 ${
+            isActiveRoute("/tokenomics") ? "sidebar-menu-item active" : "sidebar-menu-item"
+          }`}>
+            <i className="ri-coin-line mr-3 text-lg"></i>
+            <span>Tokenomics</span>
+          </a>
+        </Link>
+        
         <div className="px-4 mt-6 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Settings
         </div>
