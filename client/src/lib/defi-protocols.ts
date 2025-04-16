@@ -378,7 +378,8 @@ export const swapTokens = async (
   // Calculate minimum output amount with slippage tolerance
   const path = [tokenInAddress, tokenOutAddress];
   // This would normally get quotes from the router
-  const amountOutMin = BigInt(Math.floor(Number(amountIn) * 0.98 * (1 - slippageTolerance / 100)));
+  const amountOutMinCalculation = Math.floor(Number(amountIn) * 0.98 * (1 - slippageTolerance / 100));
+  const amountOutMin = BigInt(amountOutMinCalculation.toString());
   
   // Execute the swap
   return router.swapExactTokensForTokens(

@@ -1,7 +1,9 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer } from 'ws';
 import { storage } from "./storage";
 import { z } from "zod";
+import crypto from 'crypto';
 import { 
   insertUserSchema, 
   insertWalletSchema, 
@@ -40,7 +42,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/users/:id", async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userIdParam = req.params.id;
+      // Validate id is a number
+      if (!/^\d+$/.test(userIdParam)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+      
+      const userId = parseInt(userIdParam);
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -81,7 +89,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/wallets/:id", async (req: Request, res: Response) => {
     try {
-      const walletId = parseInt(req.params.id);
+      const walletIdParam = req.params.id;
+      // Validate id is a number
+      if (!/^\d+$/.test(walletIdParam)) {
+        return res.status(400).json({ message: "Invalid wallet ID format" });
+      }
+      
+      const walletId = parseInt(walletIdParam);
       const wallet = await storage.getWallet(walletId);
       
       if (!wallet) {
@@ -440,6 +454,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Create WebSocket server with secure configuration and path that won't conflict with Vite
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    // Verify client connection based on authentication
+    verifyClient: (info, callback) => {
+      // Simple example - in production use a more robust authentication system
+      const url = info.req.url || '';
+      const token = new URL(url, 'https://example.org').searchParams.get('token');
+      // Verify token - in a real app, check against stored tokens
+      const isValidToken = token && token.length > 20;
+      
+      if (!isValidToken) {
+        callback(false, 401, 'Unauthorized');
+        return;
+      }
+      
+      callback(true);
+    }
+  });
+  
+  // Generate secure session tokens for WebSocket authentication
+  function generateSecureToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+  
+  // Store valid tokens (in a real app, use a more persistent storage)
+  const validTokens = new Set<string>();
+  
+  // API endpoint to get a token for WebSocket authentication
+  router.post("/ws-auth", async (req: Request, res: Response) => {
+    try {
+      // In a real app, verify user credentials here
+      // Here we're just generating a token
+      const token = generateSecureToken();
+      validTokens.add(token);
+      
+      // Tokens expire after 1 hour
+      setTimeout(() => {
+        validTokens.delete(token);
+      }, 60 * 60 * 1000);
+      
+      res.status(200).json({ token });
+    } catch (error) {
+      res.status(500).json({ message: "Error generating WebSocket token" });
+    }
+  });
+  
+  // WebSocket connection handler
+  wss.on('connection', (ws, req) => {
+    // Parse token from URL
+    const url = req.url || '';
+    const token = new URL(url, 'https://example.org').searchParams.get('token');
+    
+    // Additional security check
+    if (!token || !validTokens.has(token)) {
+      ws.close(1008, 'Invalid token');
+      return;
+    }
+    
+    // Handle messages with proper validation
+    ws.on('message', (message) => {
+      try {
+        // Parse and validate the message
+        const data = JSON.parse(message.toString());
+        const { type, payload } = data;
+        
+        // Basic message type validation
+        if (!type || typeof type !== 'string') {
+          ws.send(JSON.stringify({ error: 'Invalid message format' }));
+          return;
+        }
+        
+        // Handle different message types
+        switch (type) {
+          case 'transaction_update':
+            // Process transaction updates
+            // In a real implementation, validate the payload thoroughly
+            if (ws.readyState === ws.OPEN) {
+              ws.send(JSON.stringify({ type: 'transaction_confirmed', payload }));
+            }
+            break;
+            
+          case 'ping':
+            if (ws.readyState === ws.OPEN) {
+              ws.send(JSON.stringify({ type: 'pong' }));
+            }
+            break;
+            
+          default:
+            if (ws.readyState === ws.OPEN) {
+              ws.send(JSON.stringify({ error: 'Unknown message type' }));
+            }
+        }
+      } catch (error) {
+        // Handle parsing errors
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify({ error: 'Invalid message format' }));
+        }
+      }
+    });
+    
+    // Handle connection close
+    ws.on('close', () => {
+      // Clean up any resources when connection closes
+    });
+  });
 
   return httpServer;
 }

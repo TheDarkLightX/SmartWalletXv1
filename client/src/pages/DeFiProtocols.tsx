@@ -253,7 +253,7 @@ export default function DeFiProtocols() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {defiStrategies.map((strategy) => (
+                      {defiStrategies.map((strategy: any) => (
                         <div key={strategy.id} className="border p-4 rounded-lg">
                           <div className="flex justify-between items-start">
                             <div>
