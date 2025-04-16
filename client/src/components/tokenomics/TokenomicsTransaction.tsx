@@ -4,27 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Coins, ArrowRight, RefreshCw, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Coins, ArrowRight, RefreshCw, Info, Percent } from "lucide-react";
 import { useNetwork } from '@/hooks/useNetwork';
-import { calculateTransactionFee, calculateNetAmount } from "@/lib/tokenomics";
+import { calculateTransactionFee, calculateNetAmount, calculateTokenDiscount } from "@/lib/tokenomics";
 import { formatAddress } from "@/lib/ethers";
 
 interface TokenomicsTransactionProps {
   walletAddress: string;
   walletBalance?: string;
-  hasWalletToken?: boolean;
+  tokenHoldings?: {
+    amount: string;
+    percentOfSupply: number;
+  };
 }
 
 export const TokenomicsTransaction = ({ 
   walletAddress, 
   walletBalance = "0",
-  hasWalletToken = false 
+  tokenHoldings = { amount: "0", percentOfSupply: 0 }
 }: TokenomicsTransactionProps) => {
   const { currentNetwork, nativeCurrencySymbol } = useNetwork();
   
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [useWalletToken, setUseWalletToken] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -32,21 +35,26 @@ export const TokenomicsTransaction = ({
   const [fee, setFee] = useState("0");
   const [netAmount, setNetAmount] = useState("0");
   
+  // Calculate the user's token discount
+  const tokenDiscount = calculateTokenDiscount(tokenHoldings.amount);
+  const hasTokenDiscount = tokenDiscount > 0;
+  const discountPercentage = Math.round(tokenDiscount * 100);
+  
   // Calculate fees when amount changes
   useEffect(() => {
     if (amount && !isNaN(parseFloat(amount))) {
-      // Update fee
-      const calculatedFee = calculateTransactionFee(amount, useWalletToken);
+      // Update fee with token holdings for discount
+      const calculatedFee = calculateTransactionFee(amount, tokenHoldings.amount);
       setFee(calculatedFee);
       
       // Update net amount
-      const calculatedNetAmount = calculateNetAmount(amount, useWalletToken);
+      const calculatedNetAmount = calculateNetAmount(amount, tokenHoldings.amount);
       setNetAmount(calculatedNetAmount);
     } else {
       setFee("0");
       setNetAmount("0");
     }
-  }, [amount, useWalletToken]);
+  }, [amount, tokenHoldings.amount]);
   
   // Form validation
   const isFormValid = () => {
@@ -130,25 +138,32 @@ export const TokenomicsTransaction = ({
             )}
           </div>
           
-          {hasWalletToken && (
-            <div className="flex items-center justify-between space-x-2 pt-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="use-token" className="text-sm">Use WALLET tokens for fees</Label>
-                <p className="text-xs text-muted-foreground">Pay reduced fees by using WALLET tokens</p>
-              </div>
-              <Switch
-                id="use-token"
-                checked={useWalletToken}
-                onCheckedChange={setUseWalletToken}
-                disabled={!hasWalletToken}
-              />
+          {/* Token holding status and discount */}
+          <div className="flex items-center justify-between space-x-2 pt-2">
+            <div className="space-y-0.5">
+              <Label className="text-sm">Discount Token Status</Label>
+              <p className="text-xs text-muted-foreground">
+                {hasTokenDiscount 
+                  ? `You hold ${parseFloat(tokenHoldings.amount).toFixed(2)} WALLET tokens (${discountPercentage}% discount)` 
+                  : "Hold WALLET tokens to receive fee discounts"}
+              </p>
             </div>
-          )}
+            {hasTokenDiscount && (
+              <Badge variant="outline" className="bg-green-500/10 text-green-500">
+                <Percent className="mr-1 h-3 w-3" />
+                {discountPercentage}% Off
+              </Badge>
+            )}
+          </div>
           
           {amount && parseFloat(amount) > 0 && (
             <div className="rounded-lg border p-3 space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Fee ({useWalletToken ? 'Discounted' : 'Standard'}):</span>
+                <span className="text-muted-foreground">
+                  Fee {hasTokenDiscount && (
+                    <span className="text-green-600">({discountPercentage}% discount applied)</span>
+                  )}:
+                </span>
                 <span className="font-medium">{parseFloat(fee).toFixed(6)} {nativeCurrencySymbol}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
@@ -158,8 +173,8 @@ export const TokenomicsTransaction = ({
               <div className="flex items-start gap-2 mt-3 text-xs text-muted-foreground bg-muted p-2 rounded">
                 <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <p>
-                  {useWalletToken ? 'Discounted fee' : 'Standard fee'} supports developer funding and powers the 
-                  automatic buy & burn mechanism for {nativeCurrencySymbol} and PLSX.
+                  {hasTokenDiscount ? `Discounted fee (${discountPercentage}% off)` : 'Standard fee'} supports developer 
+                  funding and powers the automatic buy & burn mechanism for {nativeCurrencySymbol} and PLSX.
                 </p>
               </div>
             </div>

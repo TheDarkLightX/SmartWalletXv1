@@ -9,6 +9,7 @@ import AIStrategies from "@/pages/AIStrategies";
 import PrivacyTools from "@/pages/PrivacyTools";
 import SocialRecovery from "@/pages/SocialRecovery";
 import Security from "@/pages/Security";
+import TokenomicsVisualizer from "@/pages/TokenomicsVisualizer";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/privacy-tools" component={PrivacyTools} />
       <Route path="/social-recovery" component={SocialRecovery} />
       <Route path="/security" component={Security} />
+      <Route path="/tokenomics" component={TokenomicsVisualizer} />
       <Route component={NotFound} />
     </Switch>
   );
