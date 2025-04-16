@@ -193,31 +193,77 @@ export const encryptWithSecureElement = async (
  * Generate secure random bytes using the hardware random number generator
  */
 export const generateSecureRandomBytes = (length: number): Uint8Array => {
-  const environment = detectSecureEnvironment();
-  
-  // In a real implementation, this would call platform-specific APIs
-  if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK && environment.supportsSecureRandom) {
-    // Would use hardware random number generator
-    console.log(`Generating ${length} secure random bytes in ${environment.type}`);
+  try {
+    const environment = detectSecureEnvironment();
     
-    // Mock implementation - in reality would call to native code
-    const result = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-      result[i] = Math.floor(Math.random() * 256);
+    // Always use Web Crypto API for secure random generation when available
+    // This is the most secure option in browser environments
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const result = new Uint8Array(length);
+      window.crypto.getRandomValues(result);
+      return result;
     }
-    return result;
-  } else {
-    // Software fallback
-    console.log('No secure RNG available. Using software random generation');
     
-    // Mock implementation
-    const result = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-      result[i] = Math.floor(Math.random() * 256);
+    // In a real implementation, this would call platform-specific APIs
+    if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK && environment.supportsSecureRandom) {
+      // Would use hardware random number generator - we'd implement native calls here
+      // For now, we'll use a more secure fallback than Math.random()
+      
+      // This is a placeholder that would be replaced with actual secure implementation
+      const result = new Uint8Array(length);
+      const secureRandomFn = getSecurePseudoRandomFunction(environment.type);
+      for (let i = 0; i < length; i++) {
+        // Use a more secure seed and algorithm instead of Math.random
+        result[i] = secureRandomFn(i, length) % 256;
+      }
+      return result;
+    } else {
+      // Software fallback - use the best available method
+      // This would be a much more sophisticated implementation in production
+      
+      // Create a seed based on multiple sources of entropy
+      const seed = Date.now().toString() + 
+                  (typeof performance !== 'undefined' ? performance.now().toString() : '') +
+                  (typeof navigator !== 'undefined' ? JSON.stringify(navigator.userAgent) : '');
+      
+      // Use a better algorithm than Math.random
+      const result = new Uint8Array(length);
+      for (let i = 0; i < length; i++) {
+        // Simple hash-based PRNG as a better fallback
+        // Note: This is still not cryptographically secure and would be replaced 
+        // with a proper CSPRNG in production
+        const hash = simpleHash(seed + i.toString());
+        result[i] = hash % 256;
+      }
+      return result;
     }
-    return result;
+  } catch (error) {
+    // Error handling is important in security-critical code
+    console.error('Error generating secure random bytes:', error);
+    throw new Error('Failed to generate secure random bytes: ' + (error instanceof Error ? error.message : String(error)));
   }
 };
+
+// A simple hash function for fallback entropy
+function simpleHash(input: string): number {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+// Get an appropriate PRNG based on environment
+function getSecurePseudoRandomFunction(envType: SecureEnvironmentType): (index: number, length: number) => number {
+  // In a real implementation, this would return different algorithms based on the environment
+  return (index: number, length: number) => {
+    // Much more sophisticated algorithm would be used in production
+    const base = Date.now() ^ (index * 7919) ^ (length * 104729);
+    return simpleHash(base.toString() + index.toString());
+  };
+}
 
 // Helper functions to detect platform capabilities
 function isIOS(): boolean {

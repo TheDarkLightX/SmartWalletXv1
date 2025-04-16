@@ -40,6 +40,42 @@ export const defaultMPCConfig: MPCConfig = {
 };
 
 /**
+ * Validate MPC input parameters to ensure they meet security requirements
+ */
+function validateMPCInputs(
+  inputs: any, 
+  computationFunction: string,
+  config: MPCConfig
+): void {
+  // Input validation is critical for security
+  if (!inputs) {
+    throw new Error('MPC inputs cannot be null or undefined');
+  }
+  
+  if (!computationFunction || typeof computationFunction !== 'string') {
+    throw new Error('Invalid computation function specified');
+  }
+  
+  // Validate configuration
+  if (config.threshold <= 0 || config.threshold > config.numberOfParties) {
+    throw new Error(`Invalid threshold: ${config.threshold}. Must be between 1 and ${config.numberOfParties}`);
+  }
+  
+  if (config.numberOfParties <= 0) {
+    throw new Error(`Invalid number of parties: ${config.numberOfParties}. Must be positive`);
+  }
+  
+  if (config.timeoutSeconds <= 0) {
+    throw new Error(`Invalid timeout: ${config.timeoutSeconds}. Must be positive`);
+  }
+  
+  // Protocol validation
+  if (!Object.values(MPCProtocol).includes(config.protocol)) {
+    throw new Error(`Unsupported MPC protocol: ${config.protocol}`);
+  }
+}
+
+/**
  * Execute a secure multi-party computation for privacy-enhanced transaction
  */
 export const executeSecureMPC = async <T>(
@@ -47,51 +83,102 @@ export const executeSecureMPC = async <T>(
   computationFunction: string,
   config: MPCConfig = defaultMPCConfig
 ): Promise<T> => {
-  console.log(`Executing secure MPC using ${config.protocol} protocol`);
-  console.log(`Threshold: ${config.threshold}, Parties: ${config.numberOfParties}`);
-  
-  // In a real implementation, this would set up and execute an actual MPC protocol
-  // For demonstration purposes, we're simulating the computation
-  
-  // Check if we can use hardware acceleration
-  const secureEnv = detectSecureEnvironment();
-  const useHardware = config.useSecureHardware && 
-    (secureEnv.type !== SecureEnvironmentType.SOFTWARE_FALLBACK);
-  
-  console.log(`Using hardware acceleration: ${useHardware}`);
-  
-  // Generate secure random seeds for each party
-  const partySeeds = Array(config.numberOfParties).fill(0).map(() => {
-    const randomBytes = generateSecureRandomBytes(32);
-    return ethers.hexlify(randomBytes);
-  });
-  
-  // Simulate secret sharing of the input
-  const shares = simulateSecretSharing(inputs, config.threshold, config.numberOfParties);
-  
-  // Simulate MPC computation based on the protocol
-  let result: any;
-  switch (config.protocol) {
-    case MPCProtocol.SPDZ:
-      result = simulateSPDZProtocol(shares, computationFunction, partySeeds);
-      break;
-    case MPCProtocol.BGW:
-      result = simulateBGWProtocol(shares, computationFunction, partySeeds);
-      break;
-    case MPCProtocol.SHAMIR:
-      result = simulateShamirProtocol(shares, computationFunction, partySeeds);
-      break;
-    case MPCProtocol.GMW:
-      result = simulateGMWProtocol(shares, computationFunction, partySeeds);
-      break;
-    case MPCProtocol.YAO:
-      result = simulateYaoProtocol(shares, computationFunction, partySeeds);
-      break;
-    default:
-      throw new Error(`Unsupported MPC protocol: ${config.protocol}`);
+  try {
+    // Validate inputs before processing
+    validateMPCInputs(inputs, computationFunction, config);
+    
+    // Set up logging that can be disabled in production
+    const logger = {
+      debug: (message: string) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug(`[MPC] ${message}`);
+        }
+      },
+      info: (message: string) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.info(`[MPC] ${message}`);
+        }
+      },
+      error: (message: string) => {
+        console.error(`[MPC] ${message}`);
+      }
+    };
+    
+    logger.info(`Executing ${config.protocol} protocol (t=${config.threshold}, n=${config.numberOfParties})`);
+    
+    // In a real implementation, this would set up and execute an actual MPC protocol
+    // For demonstration purposes, we're simulating the computation
+    
+    // Check if we can use hardware acceleration
+    const secureEnv = detectSecureEnvironment();
+    const useHardware = config.useSecureHardware && 
+      (secureEnv.type !== SecureEnvironmentType.SOFTWARE_FALLBACK);
+    
+    logger.debug(`Hardware acceleration: ${useHardware ? 'enabled' : 'disabled'}`);
+    
+    // Generate secure random seeds for each party with better error handling
+    let partySeeds: string[];
+    try {
+      partySeeds = Array(config.numberOfParties).fill(0).map((_, i) => {
+        const randomBytes = generateSecureRandomBytes(32);
+        return ethers.hexlify(randomBytes);
+      });
+    } catch (error) {
+      logger.error(`Failed to generate secure seeds: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error('MPC setup failed: could not generate secure seeds');
+    }
+    
+    // Simulate secret sharing of the input with input validation
+    const shares = simulateSecretSharing(inputs, config.threshold, config.numberOfParties);
+    
+    // Execute the MPC protocol with timeout handling
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`MPC computation timed out after ${config.timeoutSeconds} seconds`)), 
+        config.timeoutSeconds * 1000);
+    });
+    
+    // Protocol execution with timeout
+    const protocolPromise = new Promise<any>(async (resolve) => {
+      // Simulate MPC computation based on the protocol with better error handling
+      let result: any;
+      switch (config.protocol) {
+        case MPCProtocol.SPDZ:
+          result = simulateSPDZProtocol(shares, computationFunction, partySeeds);
+          break;
+        case MPCProtocol.BGW:
+          result = simulateBGWProtocol(shares, computationFunction, partySeeds);
+          break;
+        case MPCProtocol.SHAMIR:
+          result = simulateShamirProtocol(shares, computationFunction, partySeeds);
+          break;
+        case MPCProtocol.GMW:
+          result = simulateGMWProtocol(shares, computationFunction, partySeeds);
+          break;
+        case MPCProtocol.YAO:
+          result = simulateYaoProtocol(shares, computationFunction, partySeeds);
+          break;
+        default:
+          throw new Error(`Unsupported MPC protocol: ${config.protocol}`);
+      }
+      resolve(result);
+    });
+    
+    // Race between protocol execution and timeout
+    const result = await Promise.race([protocolPromise, timeoutPromise]);
+    
+    // Validate result before returning
+    if (!result) {
+      throw new Error('MPC computation produced null or undefined result');
+    }
+    
+    logger.info('MPC computation completed successfully');
+    return result as T;
+  } catch (error) {
+    // Proper error handling is critical in security-sensitive code
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`MPC execution failed: ${errorMessage}`);
+    throw new Error(`MPC execution failed: ${errorMessage}`);
   }
-  
-  return result as T;
 };
 
 /**
