@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Transactions from "@/pages/Transactions";
 import AIStrategies from "@/pages/AIStrategies";
+import DeFiProtocols from "@/pages/DeFiProtocols";
 import PrivacyTools from "@/pages/PrivacyTools";
 import SocialRecovery from "@/pages/SocialRecovery";
 import Security from "@/pages/Security";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/ai-strategies" component={AIStrategies} />
+      <Route path="/defi-protocols" component={DeFiProtocols} />
       <Route path="/privacy-tools" component={PrivacyTools} />
       <Route path="/social-recovery" component={SocialRecovery} />
       <Route path="/security" component={Security} />

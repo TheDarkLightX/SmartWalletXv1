@@ -2,12 +2,7 @@ import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wallet, Strategy, insertStrategySchema } from "@/shared/schema";
-import { useNetwork } from "@/hooks/useNetwork";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
-import {
+import { 
   Form,
   FormControl,
   FormDescription,
@@ -36,23 +31,58 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { useNetwork } from "@/hooks/useNetwork";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 import ProtocolSelector from "./ProtocolSelector";
 
+// Define wallet and strategy types since we can't import from schema.ts directly
+interface Wallet {
+  id: number;
+  userId: number;
+  address: string;
+  network: string;
+  name?: string;
+  balance?: number;
+}
+
+interface Strategy {
+  id: number;
+  userId: number;
+  walletId: number;
+  name: string;
+  description?: string;
+  type: string;
+  conditions?: any;
+  actions?: any;
+  schedule?: string;
+  isActive: boolean;
+  lastExecuted?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // Extended schema with validation
-const strategyFormSchema = insertStrategySchema
-  .extend({
-    protocolId: z.string().min(1, "Protocol selection is required"),
-    actionType: z.string().min(1, "Action type is required"),
-    tokenAddress: z.string().min(1, "Token selection is required"),
-    targetTokenAddress: z.string().optional(),
-    amountPercentage: z.number().min(0).max(100),
-    targetApy: z.number().min(0).optional(),
-    maxSlippage: z.number().min(0).max(10),
-    rebalanceThreshold: z.number().min(0).max(100).optional(),
-    stopLoss: z.number().min(0).max(100).optional(),
-    takeProfit: z.number().min(0).max(1000).optional(),
-  })
-  .omit({ conditions: true, actions: true });
+const strategyFormSchema = z.object({
+  userId: z.number(),
+  walletId: z.number(),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  type: z.string().default("defi"),
+  protocolId: z.string().min(1, "Protocol selection is required"),
+  actionType: z.string().min(1, "Action type is required"),
+  tokenAddress: z.string().min(1, "Token selection is required"),
+  targetTokenAddress: z.string().optional(),
+  amountPercentage: z.number().min(0).max(100),
+  targetApy: z.number().min(0).optional(),
+  maxSlippage: z.number().min(0).max(10),
+  rebalanceThreshold: z.number().min(0).max(100).optional(),
+  stopLoss: z.number().min(0).max(100).optional(),
+  takeProfit: z.number().min(0).max(1000).optional(),
+  schedule: z.string().default("0 0 * * 1"), // Default to weekly on Monday
+  isActive: z.boolean().default(true),
+});
 
 type DeFiStrategyFormValues = z.infer<typeof strategyFormSchema>;
 
@@ -94,7 +124,7 @@ const DeFiStrategyForm: React.FC<DeFiStrategyFormProps> = ({
     actionType: existingStrategy?.conditions?.actionType || "",
     tokenAddress: existingStrategy?.conditions?.tokenAddress || "",
     targetTokenAddress: existingStrategy?.conditions?.targetTokenAddress || "",
-    amountPercentage: existingStrategy?.conditions?.amountPercentage || 0,
+    amountPercentage: existingStrategy?.conditions?.amountPercentage || 50,
     targetApy: existingStrategy?.conditions?.targetApy || 0,
     maxSlippage: existingStrategy?.conditions?.maxSlippage || 0.5,
     rebalanceThreshold: existingStrategy?.conditions?.rebalanceThreshold || 5,
@@ -447,10 +477,7 @@ const DeFiStrategyForm: React.FC<DeFiStrategyFormProps> = ({
                             (asset) => asset.address !== selectedTokenAddress
                           )
                           .map((asset) => (
-                            <SelectItem
-                              key={asset.address}
-                              value={asset.address}
-                            >
+                            <SelectItem key={asset.address} value={asset.address}>
                               {asset.symbol} - {asset.name}
                             </SelectItem>
                           ))}
@@ -464,206 +491,191 @@ const DeFiStrategyForm: React.FC<DeFiStrategyFormProps> = ({
           </div>
         )}
 
-        {/* Amount Percentage Slider */}
+        {/* Amount & Slippage Settings */}
         {selectedProtocol && actionType && (
-          <FormField
-            control={form.control}
-            name="amountPercentage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Amount Percentage</FormLabel>
-                <FormControl>
-                  <div className="space-y-2">
-                    <Slider
-                      min={0}
-                      max={100}
-                      step={1}
-                      defaultValue={[field.value || 0]}
-                      onValueChange={(value) => field.onChange(value[0])}
-                    />
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">0%</span>
-                      <span className="text-sm font-medium">{field.value || 0}%</span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">100%</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="amountPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount (% of wallet balance)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Slider
+                        defaultValue={[field.value ?? 50]}
+                        min={1}
+                        max={100}
+                        step={1}
+                        onValueChange={(values) => field.onChange(values[0])}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>1%</span>
+                        <span>{field.value}%</span>
+                        <span>100%</span>
+                      </div>
                     </div>
-                  </div>
-                </FormControl>
-                <FormDescription>
-                  Percentage of available assets to use for this strategy
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  </FormControl>
+                  <FormDescription>
+                    Percentage of your wallet balance to use for this strategy
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="maxSlippage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max Slippage (%)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Slider
+                        defaultValue={[field.value ?? 0.5]}
+                        min={0.1}
+                        max={5}
+                        step={0.1}
+                        onValueChange={(values) => field.onChange(values[0])}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>0.1%</span>
+                        <span>{field.value}%</span>
+                        <span>5%</span>
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Maximum acceptable price slippage for the transaction
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         )}
 
-        {/* Max Slippage Tolerance */}
-        {selectedProtocol && (actionType === StrategyActionType.SWAP || 
-          actionType === StrategyActionType.ADD_LIQUIDITY) && (
-          <FormField
-            control={form.control}
-            name="maxSlippage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Max Slippage Tolerance (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="10"
-                    placeholder="0.5"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Maximum acceptable slippage percentage for transactions
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
+        {/* Conditional Fields based on Strategy Type */}
+        {selectedProtocol && actionType && (
+          <>
+            {/* Yield Farming Settings */}
+            {(actionType === StrategyActionType.YIELD_FARM) && (
+              <FormField
+                control={form.control}
+                name="targetApy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target APY (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        placeholder="5.0"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Minimum APY target for this strategy (0 for any APY)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
-        )}
 
-        {/* Target APY for yield farming */}
-        {selectedProtocol && actionType === StrategyActionType.YIELD_FARM && (
-          <FormField
-            control={form.control}
-            name="targetApy"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Target APY (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    placeholder="Enter target APY"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Target Annual Percentage Yield (strategy will search for best pools)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        {/* Rebalance Threshold */}
-        {selectedProtocol && (
-          <FormField
-            control={form.control}
-            name="rebalanceThreshold"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rebalance Threshold (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    placeholder="5"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Price deviation percentage that triggers strategy rebalancing
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        {/* Risk Management - Stop Loss and Take Profit */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="stopLoss"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Stop Loss (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    placeholder="Optional"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Exit position if loss exceeds this percentage
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="takeProfit"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Take Profit (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="Optional"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Exit position when profit reaches this percentage
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Execution Schedule */}
-        <FormField
-          control={form.control}
-          name="schedule"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Execution Schedule (CRON format)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="0 0 * * 1"
-                  {...field}
+            {/* Stop Loss & Take Profit */}
+            {(actionType === StrategyActionType.SWAP ||
+              actionType === StrategyActionType.YIELD_FARM ||
+              actionType === StrategyActionType.STAKE) && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="stopLoss"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stop Loss (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="1"
+                          placeholder="0"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Exit position if value decreases by this percentage (0 to disable)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormDescription>
-                When this strategy should be executed (e.g., "0 0 * * 1" for weekly on Monday)
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
-        {/* Active Status */}
+                <FormField
+                  control={form.control}
+                  name="takeProfit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Take Profit (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="1"
+                          placeholder="0"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Exit position if value increases by this percentage (0 to disable)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Rebalance Threshold for certain strategies */}
+            {(actionType === StrategyActionType.ADD_LIQUIDITY) && (
+              <FormField
+                control={form.control}
+                name="rebalanceThreshold"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rebalance Threshold (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="1"
+                        placeholder="5"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Rebalance when token ratio differs by this percentage (0 to disable)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </>
+        )}
+
+        {/* Strategy Execution Settings */}
         <FormField
           control={form.control}
           name="isActive"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">Active Status</FormLabel>
+                <FormLabel className="text-base">Activate Strategy</FormLabel>
                 <FormDescription>
-                  Enable or disable this strategy
+                  Enable this strategy to be executed on schedule
                 </FormDescription>
               </div>
               <FormControl>
@@ -676,16 +688,21 @@ const DeFiStrategyForm: React.FC<DeFiStrategyFormProps> = ({
           )}
         />
 
-        <Button type="submit" disabled={createStrategy.isPending} className="w-full">
-          {createStrategy.isPending ? (
-            <>
-              <i className="ri-loader-4-line animate-spin mr-2"></i>
-              {existingStrategy ? "Updating..." : "Creating..."}
-            </>
-          ) : (
-            existingStrategy ? "Update Strategy" : "Create Strategy"
-          )}
-        </Button>
+        <div className="flex justify-end space-x-2">
+          <Button type="button" variant="outline" onClick={() => onSuccess({} as Strategy)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={createStrategy.isPending}>
+            {createStrategy.isPending ? (
+              <>
+                <span className="animate-spin mr-2">⚙️</span>
+                {existingStrategy ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              <>{existingStrategy ? "Update Strategy" : "Create Strategy"}</>
+            )}
+          </Button>
+        </div>
       </form>
 
       {/* Protocol Selector Dialog */}
