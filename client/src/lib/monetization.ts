@@ -64,8 +64,8 @@ export const monetizationConfig = {
   
   // Revenue split for premium features
   revenueSplit: {
-    noExpectationsFund: 0.90, // 90% to the No Expectations Fund
-    buyAndBurn: 0.10, // 10% to Buy & Burn
+    noExpectationsFund: 0.25, // 25% to the No Expectations Fund (same as transaction fees)
+    buyAndBurn: 0.75, // 75% to Buy & Burn (same as transaction fees)
   },
 };
 
