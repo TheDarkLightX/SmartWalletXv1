@@ -30,82 +30,104 @@ export interface SecureEnvironmentCapabilities {
  * Detect the available secure environment on the current device
  */
 export const detectSecureEnvironment = (): SecureEnvironmentCapabilities => {
-  // In a real implementation, this would detect the actual hardware capabilities
-  // For iOS devices
-  if (isIOS()) {
-    return {
-      type: SecureEnvironmentType.SECURE_ENCLAVE,
-      supportsKeyGeneration: true,
-      supportsSigningWithBiometrics: true,
-      supportsEncryption: true,
-      supportsSecureRandom: true,
-      supportsAttestation: true,
-      supportsMPC: false // Secure Enclave doesn't support MPC natively
-    };
-  }
-  
-  // For Android devices
-  if (isAndroid()) {
-    return {
-      type: SecureEnvironmentType.ARM_TRUSTZONE,
-      supportsKeyGeneration: true,
-      supportsSigningWithBiometrics: true,
-      supportsEncryption: true,
-      supportsSecureRandom: true,
-      supportsAttestation: true,
-      supportsMPC: false // TrustZone doesn't support MPC natively
-    };
-  }
+  try {
+    // Check if we're in a browser environment with Web Crypto API support
+    const hasWebCrypto = typeof window !== 'undefined' && 
+                         typeof window.crypto !== 'undefined' && 
+                         typeof window.crypto.subtle !== 'undefined';
+    
+    // Check for WebAuthn support (indicates potential for hardware-backed credentials)
+    const hasWebAuthn = typeof window !== 'undefined' && 
+                        typeof window.PublicKeyCredential !== 'undefined';
+    
+    // For iOS devices
+    if (isIOS()) {
+      return {
+        type: SecureEnvironmentType.SECURE_ENCLAVE,
+        supportsKeyGeneration: true,
+        supportsSigningWithBiometrics: true,
+        supportsEncryption: true,
+        supportsSecureRandom: hasWebCrypto,
+        supportsAttestation: hasWebAuthn,
+        supportsMPC: false // Secure Enclave doesn't support MPC natively
+      };
+    }
+    
+    // For Android devices
+    if (isAndroid()) {
+      return {
+        type: SecureEnvironmentType.ARM_TRUSTZONE,
+        supportsKeyGeneration: true,
+        supportsSigningWithBiometrics: true,
+        supportsEncryption: true,
+        supportsSecureRandom: hasWebCrypto,
+        supportsAttestation: hasWebAuthn,
+        supportsMPC: false // TrustZone doesn't support MPC natively
+      };
+    }
 
-  // For Windows devices with TPM
-  if (isWindowsWithTPM()) {
+    // For Windows devices with TPM
+    if (isWindowsWithTPM()) {
+      return {
+        type: SecureEnvironmentType.TPM,
+        supportsKeyGeneration: true,
+        supportsSigningWithBiometrics: false,
+        supportsEncryption: true,
+        supportsSecureRandom: hasWebCrypto,
+        supportsAttestation: hasWebAuthn,
+        supportsMPC: false
+      };
+    }
+
+    // For machines with Intel SGX
+    if (hasIntelSGX()) {
+      return {
+        type: SecureEnvironmentType.INTEL_SGX,
+        supportsKeyGeneration: true,
+        supportsSigningWithBiometrics: false,
+        supportsEncryption: true,
+        supportsSecureRandom: hasWebCrypto,
+        supportsAttestation: true,
+        supportsMPC: true // SGX can support MPC applications
+      };
+    }
+
+    // For machines with AMD PSP (Platform Security Processor)
+    if (hasAMDPSP()) {
+      return {
+        type: SecureEnvironmentType.AMD_PSP,
+        supportsKeyGeneration: true,
+        supportsSigningWithBiometrics: false,
+        supportsEncryption: true,
+        supportsSecureRandom: hasWebCrypto,
+        supportsAttestation: true,
+        supportsMPC: false
+      };
+    }
+
+    // Software fallback if no secure hardware is available or if in a non-browser environment
     return {
-      type: SecureEnvironmentType.TPM,
+      type: SecureEnvironmentType.SOFTWARE_FALLBACK,
       supportsKeyGeneration: true,
       supportsSigningWithBiometrics: false,
       supportsEncryption: true,
-      supportsSecureRandom: true,
-      supportsAttestation: true,
-      supportsMPC: false
+      supportsSecureRandom: hasWebCrypto, // Will be false in Node.js
+      supportsAttestation: false,
+      supportsMPC: true // We can do MPC in software
     };
-  }
-
-  // For machines with Intel SGX
-  if (hasIntelSGX()) {
+  } catch (error) {
+    // If anything goes wrong, return a conservative software fallback
+    console.error('Error detecting secure environment:', error);
     return {
-      type: SecureEnvironmentType.INTEL_SGX,
+      type: SecureEnvironmentType.SOFTWARE_FALLBACK,
       supportsKeyGeneration: true,
-      supportsSigningWithBiometrics: false,
+      supportsSigningWithBiometrics: false, 
       supportsEncryption: true,
-      supportsSecureRandom: true,
-      supportsAttestation: true,
-      supportsMPC: true // SGX can support MPC applications
+      supportsSecureRandom: false,
+      supportsAttestation: false,
+      supportsMPC: true
     };
   }
-
-  // For machines with AMD PSP (Platform Security Processor)
-  if (hasAMDPSP()) {
-    return {
-      type: SecureEnvironmentType.AMD_PSP,
-      supportsKeyGeneration: true,
-      supportsSigningWithBiometrics: false,
-      supportsEncryption: true,
-      supportsSecureRandom: true,
-      supportsAttestation: true,
-      supportsMPC: false
-    };
-  }
-
-  // Software fallback if no secure hardware is available
-  return {
-    type: SecureEnvironmentType.SOFTWARE_FALLBACK,
-    supportsKeyGeneration: true,
-    supportsSigningWithBiometrics: false,
-    supportsEncryption: true,
-    supportsSecureRandom: true,
-    supportsAttestation: false,
-    supportsMPC: true // We can do MPC in software
-  };
 };
 
 /**
@@ -115,22 +137,39 @@ export const generateSecureKey = async (
   keyName: string,
   requiresBiometrics: boolean = false
 ): Promise<string> => {
-  const environment = detectSecureEnvironment();
-  
-  // In a real implementation, this would call platform-specific APIs
-  // For demonstration purposes, we're just generating a mock key
-  if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
-    // Would use native secure key generation
-    console.log(`Generating key ${keyName} in ${environment.type}`);
+  try {
+    const environment = detectSecureEnvironment();
     
-    // Mock implementation - in reality would call to native code
-    return `secure_key_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  } else {
-    // Software fallback
-    console.log('No secure environment available. Using software key generation');
+    // Generate a secure random identifier for the key
+    const randomBytes = generateSecureRandomBytes(16);
+    let randomId = '';
     
-    // Mock implementation
-    return `software_key_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    // Convert random bytes to a hex string
+    for (let i = 0; i < randomBytes.length; i++) {
+      randomId += randomBytes[i].toString(16).padStart(2, '0');
+    }
+    
+    // In a real implementation, this would call platform-specific APIs
+    // For demonstration purposes, we're just generating a mock key
+    if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
+      // Would use native secure key generation
+      // This would involve using platform-specific secure key APIs
+      console.log(`Generating key ${keyName} in ${environment.type}`);
+      
+      // Mock implementation that uses secure randomness instead of Math.random()
+      return `secure_key_${Date.now()}_${randomId}`;
+    } else {
+      // Software fallback
+      console.log('No secure environment available. Using software key generation');
+      
+      // Even in software mode, we use secure randomness
+      return `software_key_${Date.now()}_${randomId}`;
+    }
+  } catch (error) {
+    // Error handling is critical in security-sensitive code
+    console.error('Error generating secure key:', error);
+    throw new Error('Failed to generate secure key: ' + 
+      (error instanceof Error ? error.message : String(error)));
   }
 };
 
@@ -142,25 +181,41 @@ export const signWithSecureKey = async (
   keyName: string,
   requiresBiometricAuth: boolean = false
 ): Promise<string> => {
-  const environment = detectSecureEnvironment();
-  
-  // In a real implementation, this would call platform-specific APIs
-  if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
-    // Would use native secure signing
-    console.log(`Signing data with key ${keyName} in ${environment.type}`);
+  try {
+    const environment = detectSecureEnvironment();
     
-    if (requiresBiometricAuth && !environment.supportsSigningWithBiometrics) {
-      throw new Error('Biometric authentication requested but not supported by device');
+    // Generate a secure random signature component
+    const randomBytes = generateSecureRandomBytes(16);
+    let randomSignatureId = '';
+    
+    // Convert random bytes to a hex string
+    for (let i = 0; i < randomBytes.length; i++) {
+      randomSignatureId += randomBytes[i].toString(16).padStart(2, '0');
     }
     
-    // Mock implementation - in reality would call to native code
-    return `secure_signature_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  } else {
-    // Software fallback
-    console.log('No secure environment available. Using software signing');
-    
-    // Mock implementation
-    return `software_signature_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    // In a real implementation, this would call platform-specific APIs
+    if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
+      // Would use native secure signing
+      console.log(`Signing data with key ${keyName} in ${environment.type}`);
+      
+      if (requiresBiometricAuth && !environment.supportsSigningWithBiometrics) {
+        throw new Error('Biometric authentication requested but not supported by device');
+      }
+      
+      // Mock implementation using secure random generation
+      return `secure_signature_${Date.now()}_${randomSignatureId}`;
+    } else {
+      // Software fallback
+      console.log('No secure environment available. Using software signing');
+      
+      // Mock implementation using secure random generation
+      return `software_signature_${Date.now()}_${randomSignatureId}`;
+    }
+  } catch (error) {
+    // Proper error handling is critical in security-sensitive code
+    console.error('Error signing with secure key:', error);
+    throw new Error('Failed to sign data: ' + 
+      (error instanceof Error ? error.message : String(error)));
   }
 };
 
@@ -171,21 +226,38 @@ export const encryptWithSecureElement = async (
   data: string,
   keyName: string
 ): Promise<string> => {
-  const environment = detectSecureEnvironment();
-  
-  // In a real implementation, this would call platform-specific APIs
-  if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
-    // Would use native secure encryption
-    console.log(`Encrypting data with key ${keyName} in ${environment.type}`);
+  try {
+    const environment = detectSecureEnvironment();
     
-    // Mock implementation - in reality would call to native code
-    return `secure_encrypted_${data}_${Date.now()}`;
-  } else {
-    // Software fallback
-    console.log('No secure environment available. Using software encryption');
+    // Generate a secure random identifier for the encrypted data
+    const randomBytes = generateSecureRandomBytes(8);
+    let randomId = '';
     
-    // Mock implementation
-    return `software_encrypted_${data}_${Date.now()}`;
+    // Convert random bytes to a hex string
+    for (let i = 0; i < randomBytes.length; i++) {
+      randomId += randomBytes[i].toString(16).padStart(2, '0');
+    }
+    
+    // In a real implementation, this would call platform-specific APIs
+    if (environment.type !== SecureEnvironmentType.SOFTWARE_FALLBACK) {
+      // Would use native secure encryption through the secure element APIs
+      console.log(`Encrypting data with key ${keyName} in ${environment.type}`);
+      
+      // Mock implementation - in reality would call to native code
+      // We're using a timestamp and secure random ID instead of Math.random()
+      return `secure_encrypted_${data.substring(0, 10)}..._${Date.now()}_${randomId}`;
+    } else {
+      // Software fallback
+      console.log('No secure environment available. Using software encryption');
+      
+      // Mock implementation that still uses secure random generation
+      return `software_encrypted_${data.substring(0, 10)}..._${Date.now()}_${randomId}`;
+    }
+  } catch (error) {
+    // Error handling is critical in security-sensitive code
+    console.error('Error encrypting with secure element:', error);
+    throw new Error('Failed to encrypt data: ' + 
+      (error instanceof Error ? error.message : String(error)));
   }
 };
 
@@ -268,28 +340,39 @@ function getSecurePseudoRandomFunction(envType: SecureEnvironmentType): (index: 
 // Helper functions to detect platform capabilities
 function isIOS(): boolean {
   // In a real implementation, this would detect if running on iOS
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // Check if we're in a browser environment first
+  if (typeof navigator !== 'undefined' && typeof window !== 'undefined') {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  }
+  return false;
 }
 
 function isAndroid(): boolean {
   // In a real implementation, this would detect if running on Android
-  return /Android/.test(navigator.userAgent);
+  // Check if we're in a browser environment first
+  if (typeof navigator !== 'undefined') {
+    return /Android/.test(navigator.userAgent);
+  }
+  return false;
 }
 
 function isWindowsWithTPM(): boolean {
   // In a real implementation, this would detect if running on Windows with TPM
   // This is a mock implementation
+  // We would use Windows-specific APIs to detect TPM
   return false;
 }
 
 function hasIntelSGX(): boolean {
   // In a real implementation, this would detect if Intel SGX is available
+  // This would require either native code or browser extensions with special permissions
   // This is a mock implementation
   return false;
 }
 
 function hasAMDPSP(): boolean {
   // In a real implementation, this would detect if AMD PSP is available
+  // This would require native code access
   // This is a mock implementation
   return false;
 }

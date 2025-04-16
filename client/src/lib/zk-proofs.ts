@@ -108,6 +108,49 @@ export const generateNullifier = async (
 };
 
 /**
+ * Validate private transaction inputs
+ */
+function validatePrivateTransaction(transaction: PrivateTransaction | null | undefined): void {
+  if (!transaction) {
+    throw new Error('Transaction data is required');
+  }
+  
+  if (!transaction.fromAsset || typeof transaction.fromAsset !== 'string') {
+    throw new Error('Valid source asset is required');
+  }
+  
+  if (!transaction.toAsset || typeof transaction.toAsset !== 'string') {
+    throw new Error('Valid target asset is required');
+  }
+  
+  if (!transaction.amount || typeof transaction.amount !== 'string') {
+    throw new Error('Valid amount is required');
+  }
+  
+  // Check if amount is a valid number
+  const amountNumber = parseFloat(transaction.amount);
+  if (isNaN(amountNumber) || amountNumber <= 0) {
+    throw new Error('Amount must be a positive number');
+  }
+  
+  if (transaction.privacyLevel === undefined || 
+      !Object.values(PrivacyLevel).includes(transaction.privacyLevel)) {
+    throw new Error('Valid privacy level is required');
+  }
+  
+  // If we have addresses, validate them
+  if (transaction.fromAddress !== undefined && 
+      (typeof transaction.fromAddress !== 'string' || !transaction.fromAddress.startsWith('0x'))) {
+    throw new Error('From address must be a valid address');
+  }
+  
+  if (transaction.toAddress !== undefined && 
+      (typeof transaction.toAddress !== 'string' || !transaction.toAddress.startsWith('0x'))) {
+    throw new Error('To address must be a valid address');
+  }
+}
+
+/**
  * Generate a zero-knowledge proof for a private transaction
  * 
  * In a real implementation, this would use a zk-SNARK library like snarkjs or circom
@@ -116,34 +159,47 @@ export const generateProof = async (
   transaction: PrivateTransaction,
   privateKey: string
 ): Promise<ZkProof> => {
-  // In a real implementation, this would generate a zk-SNARK proof
-  
-  // For demonstration purposes, we're mocking the proof generation
-  const commitment = await generateCommitment(transaction.amount);
-  const nullifier = await generateNullifier(commitment, privateKey);
-  
-  // Store these values in the transaction object
-  transaction.commitment = commitment;
-  transaction.nullifier = nullifier;
-  
-  // Create mock proof (in a real implementation, this would be a zk-SNARK proof)
-  const mockProof = ethers.keccak256(
-    ethers.toUtf8Bytes(
-      JSON.stringify({
-        commitment,
-        nullifier,
-        amount: transaction.amount,
-        asset: transaction.fromAsset
-      })
-    )
-  );
-  
-  return {
-    proofType: ZkProofType.TRANSACTION_PROOF,
-    publicInputs: [commitment, nullifier],
-    proof: mockProof,
-    verified: true
-  };
+  try {
+    // Validate inputs
+    validatePrivateTransaction(transaction);
+    
+    if (!privateKey || typeof privateKey !== 'string' || !privateKey.startsWith('0x')) {
+      throw new Error('Valid private key is required');
+    }
+    
+    // In a real implementation, this would generate a zk-SNARK proof
+    
+    // For demonstration purposes, we're mocking the proof generation
+    const commitment = await generateCommitment(transaction.amount);
+    const nullifier = await generateNullifier(commitment, privateKey);
+    
+    // Store these values in the transaction object
+    transaction.commitment = commitment;
+    transaction.nullifier = nullifier;
+    
+    // Create mock proof (in a real implementation, this would be a zk-SNARK proof)
+    const mockProof = ethers.keccak256(
+      ethers.toUtf8Bytes(
+        JSON.stringify({
+          commitment,
+          nullifier,
+          amount: transaction.amount,
+          asset: transaction.fromAsset
+        })
+      )
+    );
+    
+    return {
+      proofType: ZkProofType.TRANSACTION_PROOF,
+      publicInputs: [commitment, nullifier],
+      proof: mockProof,
+      verified: true
+    };
+  } catch (error) {
+    console.error('Error generating ZK proof:', error);
+    throw new Error('Failed to generate proof: ' + 
+      (error instanceof Error ? error.message : String(error)));
+  }
 };
 
 /**
