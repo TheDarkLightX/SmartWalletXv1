@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { LockKeyhole, ShieldCheck, User, Mail } from "lucide-react";
+import { LockKeyhole, ShieldCheck, User, Mail, Fingerprint } from "lucide-react";
 
 import {
   Card,
@@ -27,6 +27,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { PasswordlessAuthForm } from "@/components/PasswordlessAuthForm";
+import { isWebAuthnSupported, AuthResult } from "@/lib/passwordless-auth";
 
 // Form validation schemas
 const loginSchema = z.object({
@@ -51,7 +53,14 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
+  const [authMethod, setAuthMethod] = useState<"password" | "passwordless">("password");
   const { user, loginMutation, registerMutation } = useAuth();
+  const [webAuthnSupported, setWebAuthnSupported] = useState<boolean>(false);
+  
+  // Check for WebAuthn support on component mount
+  useEffect(() => {
+    setWebAuthnSupported(isWebAuthnSupported());
+  }, []);
   
   // Redirect if user is already logged in
   useEffect(() => {
@@ -115,135 +124,267 @@ export default function AuthPage() {
 
               {/* Login form */}
               <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input className="pl-10" placeholder="Enter your username" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                className="pl-10" 
-                                type="password" 
-                                placeholder="Enter your password" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
-                </Form>
+                <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as "password" | "passwordless")}>
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="password" className="flex items-center gap-2">
+                      <LockKeyhole className="h-4 w-4" />
+                      Password
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="passwordless" 
+                      className="flex items-center gap-2"
+                      disabled={!webAuthnSupported}
+                    >
+                      <Fingerprint className="h-4 w-4" />
+                      Passwordless
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="password">
+                    <Form {...loginForm}>
+                      <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                        <FormField
+                          control={loginForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input className="pl-10" placeholder="Enter your username" {...field} />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={loginForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input 
+                                    className="pl-10" 
+                                    type="password" 
+                                    placeholder="Enter your password" 
+                                    {...field} 
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                          {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                        </Button>
+                      </form>
+                    </Form>
+                  </TabsContent>
+                  
+                  <TabsContent value="passwordless">
+                    {webAuthnSupported ? (
+                      <PasswordlessAuthForm
+                        username={loginForm.watch('username') || ''}
+                        userId="temp-user-id"
+                        onAuthSuccess={(result) => {
+                          if (result.success) {
+                            toast({
+                              title: "Authentication Successful",
+                              description: "You've successfully logged in with passwordless authentication."
+                            });
+                            
+                            // In a real implementation, this would be handled by the authentication hook
+                            // For now, we'll navigate to the home page after a delay
+                            setTimeout(() => setLocation('/'), 1000);
+                          }
+                        }}
+                        mode="login"
+                      />
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-muted-foreground">
+                          Your browser does not support passwordless authentication.
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* Register form */}
               <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input className="pl-10" placeholder="Choose a username" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input className="pl-10" placeholder="Enter your email" type="email" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                className="pl-10" 
-                                type="password" 
-                                placeholder="Create a secure password" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                className="pl-10" 
-                                type="password" 
-                                placeholder="Confirm your password" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      {registerMutation.isPending ? "Creating account..." : "Create Account"}
-                    </Button>
-                  </form>
-                </Form>
+                <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as "password" | "passwordless")}>
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="password" className="flex items-center gap-2">
+                      <LockKeyhole className="h-4 w-4" />
+                      Password
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="passwordless" 
+                      className="flex items-center gap-2"
+                      disabled={!webAuthnSupported}
+                    >
+                      <Fingerprint className="h-4 w-4" />
+                      Passwordless
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="password">
+                    <Form {...registerForm}>
+                      <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                        <FormField
+                          control={registerForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input className="pl-10" placeholder="Choose a username" {...field} />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input className="pl-10" placeholder="Enter your email" type="email" {...field} />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input 
+                                    className="pl-10" 
+                                    type="password" 
+                                    placeholder="Create a secure password" 
+                                    {...field} 
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm Password</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                  <Input 
+                                    className="pl-10" 
+                                    type="password" 
+                                    placeholder="Confirm your password" 
+                                    {...field} 
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                          {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                        </Button>
+                      </form>
+                    </Form>
+                  </TabsContent>
+                  
+                  <TabsContent value="passwordless">
+                    {webAuthnSupported ? (
+                      <>
+                        <div className="space-y-4 mb-4">
+                          <FormField
+                            control={registerForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input className="pl-10" placeholder="Choose a username" {...field} />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input className="pl-10" placeholder="Enter your email" type="email" {...field} />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <PasswordlessAuthForm
+                          username={registerForm.watch('username') || ''}
+                          userId={`user-${Date.now()}`}
+                          onAuthSuccess={(result) => {
+                            if (result.success) {
+                              toast({
+                                title: "Registration Successful",
+                                description: "You've successfully registered with passwordless authentication."
+                              });
+                              
+                              // In a real implementation, this would submit the user data to the server
+                              // and then log the user in automatically
+                              // For now, we'll navigate to the home page after a delay
+                              setTimeout(() => setLocation('/'), 1000);
+                            }
+                          }}
+                          mode="register"
+                        />
+                      </>
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-muted-foreground">
+                          Your browser does not support passwordless authentication.
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             </Tabs>
           </CardContent>
