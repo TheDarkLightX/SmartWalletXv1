@@ -7,14 +7,24 @@ export const networks = {
     chainId: 369,
     rpcUrl: "https://rpc.pulsechain.com",
     blockExplorer: "https://scan.pulsechain.com",
-    isTestnet: false
+    isTestnet: false,
+    nativeCurrency: {
+      name: "PLS",
+      symbol: "PLS",
+      decimals: 18
+    }
   },
   ethereum: {
     name: "Ethereum",
     chainId: 1,
     rpcUrl: "https://mainnet.infura.io/v3/your-infura-key-here",
     blockExplorer: "https://etherscan.io",
-    isTestnet: false
+    isTestnet: false,
+    nativeCurrency: {
+      name: "Ether",
+      symbol: "ETH",
+      decimals: 18
+    }
   }
 };
 
@@ -23,22 +33,22 @@ export const defaultNetwork = networks.pulsechain;
 
 // Initialize provider for a specific network
 export const getProvider = (networkKey: 'pulsechain' | 'ethereum' = 'pulsechain') => {
-  return new ethers.providers.JsonRpcProvider(
+  return new ethers.JsonRpcProvider(
     networks[networkKey].rpcUrl
   );
 };
 
 // Create a wallet instance from a private key
-export const getWallet = (privateKey: string) => {
-  const provider = getProvider();
+export const getWallet = (privateKey: string, networkKey: 'pulsechain' | 'ethereum' = 'pulsechain') => {
+  const provider = getProvider(networkKey);
   return new ethers.Wallet(privateKey, provider);
 };
 
 // Get account balance
-export const getBalance = async (address: string) => {
-  const provider = getProvider();
+export const getBalance = async (address: string, networkKey: 'pulsechain' | 'ethereum' = 'pulsechain') => {
+  const provider = getProvider(networkKey);
   const balance = await provider.getBalance(address);
-  return ethers.utils.formatEther(balance);
+  return ethers.formatEther(balance);
 };
 
 // Send a transaction
@@ -46,10 +56,11 @@ export const sendTransaction = async (
   privateKey: string,
   toAddress: string,
   amount: string,
+  networkKey: 'pulsechain' | 'ethereum' = 'pulsechain',
   gasLimit = 21000
 ) => {
-  const wallet = getWallet(privateKey);
-  const amountWei = ethers.utils.parseEther(amount);
+  const wallet = getWallet(privateKey, networkKey);
+  const amountWei = ethers.parseEther(amount);
   
   const tx = await wallet.sendTransaction({
     to: toAddress,
@@ -64,10 +75,11 @@ export const sendTransaction = async (
 export const estimateGas = async (
   fromAddress: string,
   toAddress: string,
-  amount: string
+  amount: string,
+  networkKey: 'pulsechain' | 'ethereum' = 'pulsechain'
 ) => {
-  const provider = getProvider();
-  const amountWei = ethers.utils.parseEther(amount);
+  const provider = getProvider(networkKey);
+  const amountWei = ethers.parseEther(amount);
   
   const estimatedGas = await provider.estimateGas({
     from: fromAddress,
@@ -84,14 +96,14 @@ export const formatAddress = (address: string) => {
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
 
-// Convert Wei to ETH
+// Convert Wei to ETH/PLS
 export const weiToEth = (weiAmount: string) => {
-  return ethers.utils.formatEther(weiAmount);
+  return ethers.formatEther(weiAmount);
 };
 
-// Convert ETH to Wei
+// Convert ETH/PLS to Wei
 export const ethToWei = (ethAmount: string) => {
-  return ethers.utils.parseEther(ethAmount).toString();
+  return ethers.parseEther(ethAmount).toString();
 };
 
 // Generates a random wallet (for demo purposes)
@@ -101,4 +113,9 @@ export const generateWallet = () => {
     address: wallet.address,
     privateKey: wallet.privateKey
   };
+};
+
+// Helper to get native currency symbol based on network
+export const getNativeCurrencySymbol = (networkKey: 'pulsechain' | 'ethereum' = 'pulsechain'): string => {
+  return networks[networkKey].nativeCurrency.symbol;
 };

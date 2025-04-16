@@ -14,6 +14,7 @@ import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
+import { NetworkProvider } from "@/hooks/useNetwork";
 
 function Router() {
   return (
@@ -37,29 +38,31 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 dark:bg-dark-300">
-        {/* Sidebar */}
-        {!isMobile && <Sidebar />}
-        
-        {/* Mobile sidebar */}
-        {isMobile && isSidebarOpen && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={toggleSidebar}>
-            <div className="h-full w-64 bg-white dark:bg-dark-400" onClick={(e) => e.stopPropagation()}>
-              <Sidebar onClose={toggleSidebar} />
+      <NetworkProvider>
+        <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 dark:bg-dark-300">
+          {/* Sidebar */}
+          {!isMobile && <Sidebar />}
+          
+          {/* Mobile sidebar */}
+          {isMobile && isSidebarOpen && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={toggleSidebar}>
+              <div className="h-full w-64 bg-white dark:bg-dark-400" onClick={(e) => e.stopPropagation()}>
+                <Sidebar onClose={toggleSidebar} />
+              </div>
             </div>
+          )}
+          
+          {/* Main content */}
+          <div className="flex-1 flex flex-col">
+            <Header toggleSidebar={toggleSidebar} />
+            <main className="flex-1">
+              <Router />
+            </main>
+            {isMobile && <MobileNav />}
           </div>
-        )}
-        
-        {/* Main content */}
-        <div className="flex-1 flex flex-col">
-          <Header toggleSidebar={toggleSidebar} />
-          <main className="flex-1">
-            <Router />
-          </main>
-          {isMobile && <MobileNav />}
         </div>
-      </div>
-      <Toaster />
+        <Toaster />
+      </NetworkProvider>
     </QueryClientProvider>
   );
 }
