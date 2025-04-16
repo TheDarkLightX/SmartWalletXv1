@@ -9,7 +9,7 @@ import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
-  user: User | null;
+  user: Partial<User> | null;  // Using Partial to account for varying shapes
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<any, Error, LoginData>;
@@ -118,10 +118,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Extract user from response data structure
+  const extractedUser = userData 
+    ? (typeof userData === 'object' && userData !== null && 'user' in userData 
+      ? userData.user as Partial<User>
+      : (typeof userData === 'object' && userData !== null && 'id' in userData 
+        ? userData as Partial<User> 
+        : null))
+    : null;
+    
   return (
     <AuthContext.Provider
       value={{
-        user: userData?.user ?? null,
+        user: extractedUser,
         isLoading,
         error,
         loginMutation,

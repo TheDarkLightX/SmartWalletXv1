@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { LockKeyhole, ShieldCheck, User, Mail } from "lucide-react";
 
 import {
@@ -50,8 +50,15 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const { user, loginMutation, registerMutation } = useAuth();
+  
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   // Login form
   const loginForm = useForm<LoginFormData>({
@@ -75,67 +82,13 @@ export default function AuthPage() {
 
   // Handle login form submission
   const onLoginSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await apiRequest("POST", "/api/login", data);
-      const result = await response.json();
-      
-      if (response.ok) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to SecureWallet!",
-          variant: "default",
-        });
-        setLocation("/");
-      } else {
-        toast({
-          title: "Login failed",
-          description: result.message || "Invalid username or password",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate(data);
   };
 
   // Handle register form submission
   const onRegisterSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    try {
-      const { confirmPassword, ...registerData } = data;
-      const response = await apiRequest("POST", "/api/register", registerData);
-      const result = await response.json();
-      
-      if (response.ok) {
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created successfully!",
-          variant: "default",
-        });
-        setLocation("/");
-      } else {
-        toast({
-          title: "Registration failed",
-          description: result.message || "Could not create account",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    const { confirmPassword, ...registerData } = data;
+    registerMutation.mutate(registerData);
   };
 
   return (
@@ -201,8 +154,8 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Signing in..." : "Sign In"}
+                    <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
                     </Button>
                   </form>
                 </Form>
@@ -286,8 +239,8 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Creating account..." : "Create Account"}
+                    <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                      {registerMutation.isPending ? "Creating account..." : "Create Account"}
                     </Button>
                   </form>
                 </Form>

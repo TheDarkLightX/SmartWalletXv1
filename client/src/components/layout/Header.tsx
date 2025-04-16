@@ -1,13 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { NetworkSelector } from "@/components/network/NetworkSelector";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  LogOut, 
+  Settings, 
+  Bell, 
+  User,
+  Menu,
+  AlertTriangle
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, logoutMutation } = useAuth();
   
   // Get the page title based on the current route
   const getPageTitle = () => {
@@ -24,9 +42,16 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
         return "Social Recovery";
       case "/security":
         return "Security";
+      case "/auth":
+        return "Authentication";
       default:
         return "Dashboard";
     }
+  };
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+    setLocation("/auth");
   };
 
   return (
@@ -40,7 +65,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
               onClick={toggleSidebar}
               className="text-gray-500 hover:text-gray-600"
             >
-              <i className="ri-menu-line text-2xl"></i>
+              <Menu className="h-5 w-5" />
             </Button>
           </div>
           
@@ -52,18 +77,54 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
             <NetworkSelector />
             
             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-600">
-              <i className="ri-notification-3-line text-xl"></i>
+              <Bell className="h-5 w-5" />
             </Button>
             
             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-600">
-              <i className="ri-settings-4-line text-xl"></i>
+              <Settings className="h-5 w-5" />
             </Button>
             
-            <div className="md:hidden">
-              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-                <i className="ri-user-line"></i>
-              </div>
-            </div>
+            {/* User profile dropdown */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <User className="h-4 w-4" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
+                    {user.username}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setLocation("/security")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Account Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/social-recovery")}>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    <span>Recovery</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setLocation("/auth")}
+                className="text-primary"
+              >
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
