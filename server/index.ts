@@ -1,10 +1,125 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import csrf from "csurf";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { randomBytes } from "crypto";
+
+// Extend the session interface to include our custom properties
+declare module 'express-session' {
+  interface SessionData {
+    securityTokens?: Record<string, number>;
+  }
+}
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configure session middleware
+app.use(session({
+  secret: randomBytes(32).toString('hex'),
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'strict'
+  }
+}));
+
+// Custom Security Headers
+app.use((req, res, next) => {
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  
+  // Set Content-Security-Policy in production
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader(
+      'Content-Security-Policy', 
+      "default-src 'self'; script-src 'self'; connect-src 'self' wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+    );
+  }
+  
+  next();
+});
+
+// Custom token-based request validation
+app.use((req, res, next) => {
+  // Skip for GET and OPTIONS requests
+  if (req.method === 'GET' || req.method === 'OPTIONS') {
+    // For GET requests, generate and include a security token in the response
+    if (req.method === 'GET' && req.path.startsWith('/api/')) {
+      const originalJsonMethod = res.json;
+      res.json = function(body) {
+        if (res.statusCode < 400 && typeof body === 'object' && body !== null) {
+          // Generate a token valid for 1 hour
+          const token = randomBytes(32).toString('hex');
+          
+          // Store in session
+          if (req.session) {
+            if (!req.session.securityTokens) {
+              req.session.securityTokens = {};
+            }
+            
+            // Set expiration 1 hour from now
+            const expiryTime = Date.now() + (60 * 60 * 1000);
+            req.session.securityTokens[token] = expiryTime;
+            
+            // Clean up expired tokens
+            Object.keys(req.session.securityTokens).forEach(key => {
+              if (req.session.securityTokens[key] < Date.now()) {
+                delete req.session.securityTokens[key];
+              }
+            });
+            
+            // Add token to response
+            body.securityToken = token;
+          }
+        }
+        return originalJsonMethod.call(this, body);
+      };
+    }
+    
+    next();
+    return;
+  }
+  
+  // For modifying requests (POST, PUT, DELETE), validate the token
+  if (req.path.startsWith('/api/')) {
+    // Skip validation for authentication endpoints
+    if (req.path === '/api/login' || 
+        req.path === '/api/signup' || 
+        req.path.startsWith('/api/ws-auth')) {
+      next();
+      return;
+    }
+    
+    const token = req.headers['x-security-token'] as string;
+    
+    // Validate token exists and is in the session
+    if (!token || 
+        !req.session || 
+        !req.session.securityTokens || 
+        !req.session.securityTokens[token] ||
+        req.session.securityTokens[token] < Date.now()) {
+      return res.status(403).json({ 
+        message: 'Invalid or expired security token',
+        code: 'INVALID_TOKEN'
+      });
+    }
+    
+    // Token is valid, remove it to prevent reuse
+    delete req.session.securityTokens[token];
+    
+    next();
+  } else {
+    next();
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
