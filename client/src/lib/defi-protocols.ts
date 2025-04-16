@@ -357,7 +357,7 @@ export const executeStrategy = async (
 
 // Advanced integration with DEX contracts (for a real implementation)
 export const swapTokens = async (
-  provider: ethers.providers.Provider,
+  provider: ethers.Provider,
   routerAddress: string,
   tokenInAddress: string,
   tokenOutAddress: string,
@@ -365,7 +365,7 @@ export const swapTokens = async (
   slippageTolerance: number = 0.5,
   deadline: number = Math.floor(Date.now() / 1000) + 20 * 60, // 20 minutes
   signer: ethers.Signer
-): Promise<ethers.providers.TransactionResponse> => {
+): Promise<ethers.TransactionResponse> => {
   // This example would use the actual router ABI and contract instance
   // but is simplified for demonstration
   

@@ -110,7 +110,7 @@ export default function DeFiProtocols() {
   };
 
   // Get DeFi strategies (not AI-generated ones)
-  const defiStrategies = strategies ? strategies.filter((s: any) => s.type === 'defi') : [];
+  const defiStrategies = Array.isArray(strategies) ? strategies.filter((s: any) => s.type === 'defi') : [];
 
   return (
     <div className="container max-w-7xl mx-auto py-8">
@@ -303,7 +303,7 @@ export default function DeFiProtocols() {
             </DialogTitle>
           </DialogHeader>
           
-          {selectedProtocol && wallets && (
+          {selectedProtocol && wallets && Array.isArray(wallets) && (
             <ScrollArea className="max-h-[70vh]">
               <DeFiStrategyForm
                 wallets={wallets}
