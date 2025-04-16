@@ -1,11 +1,10 @@
 /**
- * Browser Compatibility Audit for TEE Implementation
+ * Browser Compatibility Audit Module
  * 
- * This script checks browser capabilities to determine which Trusted Execution 
- * Environment features are supported across different platforms.
+ * This module checks browser compatibility for critical security features used in the wallet.
+ * It helps identify which browsers support the security features we rely on.
  */
 
-// Types of browsers to check
 enum BrowserType {
   CHROME = 'Google Chrome',
   FIREFOX = 'Mozilla Firefox',
@@ -17,7 +16,6 @@ enum BrowserType {
   IE = 'Internet Explorer'
 }
 
-// Types of devices/platforms
 enum DeviceType {
   DESKTOP_WINDOWS = 'Windows Desktop',
   DESKTOP_MAC = 'macOS Desktop',
@@ -28,7 +26,6 @@ enum DeviceType {
   TABLET_ANDROID = 'Android Tablet'
 }
 
-// Security capabilities to check
 interface SecurityCapabilities {
   webCrypto: boolean;
   secureContext: boolean;
@@ -46,456 +43,26 @@ interface SecurityCapabilities {
   biometricAuth: boolean;
 }
 
-// Create compatibility table mapping browsers and devices to their TEE capabilities
-const compatibilityTable: Record<BrowserType, Record<DeviceType, Partial<SecurityCapabilities>>> = {
-  [BrowserType.CHROME]: {
-    [DeviceType.DESKTOP_WINDOWS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // Limited access to Windows TPM
-      biometricAuth: true // Through WebAuthn
-    },
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // No direct Secure Enclave access
-      biometricAuth: true // Through WebAuthn 
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // Varies by Linux distro and hardware
-      biometricAuth: false // Limited support
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false, // Not exposed on iOS
-      hardwareConcurrency: true,
-      teeDetection: false, // No direct Secure Enclave access
-      biometricAuth: true // Through WebAuthn
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // Limited TrustZone access 
-      biometricAuth: true // Through WebAuthn
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false, // Not exposed on iOS
-      hardwareConcurrency: true,
-      teeDetection: false, // No direct Secure Enclave access
-      biometricAuth: true // Through WebAuthn
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // Limited TrustZone access
-      biometricAuth: true // Through WebAuthn
-    }
-  },
-  [BrowserType.FIREFOX]: {
-    // Similar entries for Firefox across all device types
-    [DeviceType.DESKTOP_WINDOWS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false, // Not exposed in Firefox
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true // Through WebAuthn
-    },
-    // Other device types similar but with variations
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: false, // Limited on iOS Firefox
-      teeDetection: false,
-      biometricAuth: true
-    },
-    // Other device types filled similarly
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    }
-  },
-  [BrowserType.SAFARI]: {
-    // Safari entries, notably different for iOS
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false, // Not exposed in Safari
-      hardwareConcurrency: true,
-      teeDetection: false, // No direct Secure Enclave access 
-      biometricAuth: true // Through WebAuthn and Touch ID integration
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false, // No direct Secure Enclave access
-      biometricAuth: true // Through WebAuthn and Face ID/Touch ID
-    },
-    // Fill in other device types as appropriate
-    [DeviceType.DESKTOP_WINDOWS]: {
-      webCrypto: false, // Safari not available on Windows anymore
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: false, // Safari not available on Linux
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: false, // Safari not available on Android
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: false, // Safari not available on Android
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    }
-  },
-  // Add other browsers as needed...
-  [BrowserType.EDGE]: {
-    // Similar to Chrome as it's Chromium-based
-    [DeviceType.DESKTOP_WINDOWS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false, // Limited TPM access but better than Chrome
-      biometricAuth: true // Integrated with Windows Hello
-    },
-    // Other device types filled similarly
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: true,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      secureCookies: true,
-      contentSecurityPolicy: true,
-      subresourceIntegrity: true,
-      credentialManagement: true,
-      publicKeyCredential: true,
-      indexedDBEncryption: true,
-      secureStorage: true,
-      deviceMemory: false,
-      hardwareConcurrency: true,
-      teeDetection: false,
-      biometricAuth: true
-    },
-    [DeviceType.TABLET_ANDROID]: {
+interface BrowserCapability {
+  browser: BrowserType;
+  minVersion: string;
+  device: DeviceType[];
+  capabilities: SecurityCapabilities;
+}
+
+// Define browser capabilities matrix
+const browserCapabilities: BrowserCapability[] = [
+  {
+    browser: BrowserType.CHROME,
+    minVersion: '89',
+    device: [
+      DeviceType.DESKTOP_WINDOWS,
+      DeviceType.DESKTOP_MAC,
+      DeviceType.DESKTOP_LINUX,
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
       webCrypto: true,
       secureContext: true,
       webAuthn: true,
@@ -512,10 +79,17 @@ const compatibilityTable: Record<BrowserType, Record<DeviceType, Partial<Securit
       biometricAuth: true
     }
   },
-  // Simplified for other browsers
-  [BrowserType.SAMSUNG]: {
-    // Samsung Internet browser, primarily on Samsung Android devices
-    [DeviceType.MOBILE_ANDROID]: {
+  {
+    browser: BrowserType.FIREFOX,
+    minVersion: '91',
+    device: [
+      DeviceType.DESKTOP_WINDOWS,
+      DeviceType.DESKTOP_MAC,
+      DeviceType.DESKTOP_LINUX,
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
       webCrypto: true,
       secureContext: true,
       webAuthn: true,
@@ -526,94 +100,47 @@ const compatibilityTable: Record<BrowserType, Record<DeviceType, Partial<Securit
       publicKeyCredential: true,
       indexedDBEncryption: true,
       secureStorage: true,
-      deviceMemory: true,
+      deviceMemory: false,
       hardwareConcurrency: true,
-      teeDetection: false, // Limited but may have some Samsung Knox integration
+      teeDetection: false,
       biometricAuth: true
-    },
-    // N/A for other platforms
-    [DeviceType.DESKTOP_WINDOWS]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
+    }
+  },
+  {
+    browser: BrowserType.SAFARI,
+    minVersion: '15.4',
+    device: [
+      DeviceType.DESKTOP_MAC,
+      DeviceType.MOBILE_IOS,
+      DeviceType.TABLET_IOS
+    ],
+    capabilities: {
+      webCrypto: true,
+      secureContext: true,
+      webAuthn: true,
+      secureCookies: true,
+      contentSecurityPolicy: true,
+      subresourceIntegrity: true,
+      credentialManagement: true,
+      publicKeyCredential: true,
+      indexedDBEncryption: true,
+      secureStorage: true,
       deviceMemory: false,
       hardwareConcurrency: false,
       teeDetection: false,
-      biometricAuth: false
-    },
-    // Fill other platforms similarly
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      secureCookies: false,
-      contentSecurityPolicy: false,
-      subresourceIntegrity: false,
-      credentialManagement: false,
-      publicKeyCredential: false,
-      indexedDBEncryption: false,
-      secureStorage: false,
-      deviceMemory: false,
-      hardwareConcurrency: false,
-      teeDetection: false,
-      biometricAuth: false
-    },
-    [DeviceType.TABLET_ANDROID]: {
+      biometricAuth: true
+    }
+  },
+  {
+    browser: BrowserType.EDGE,
+    minVersion: '91',
+    device: [
+      DeviceType.DESKTOP_WINDOWS,
+      DeviceType.DESKTOP_MAC,
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
       webCrypto: true,
       secureContext: true,
       webAuthn: true,
@@ -630,120 +157,95 @@ const compatibilityTable: Record<BrowserType, Record<DeviceType, Partial<Securit
       biometricAuth: true
     }
   },
-  // Minimally fill in other browsers
-  [BrowserType.OPERA]: {
-    // Similar to Chrome
-    [DeviceType.DESKTOP_WINDOWS]: {
+  {
+    browser: BrowserType.BRAVE,
+    minVersion: '1.30',
+    device: [
+      DeviceType.DESKTOP_WINDOWS,
+      DeviceType.DESKTOP_MAC,
+      DeviceType.DESKTOP_LINUX,
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
       webCrypto: true,
       secureContext: true,
       webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    // Other platforms similar to Chrome
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
+      secureCookies: true,
+      contentSecurityPolicy: true,
+      subresourceIntegrity: true,
+      credentialManagement: true,
+      publicKeyCredential: true,
+      indexedDBEncryption: true,
+      secureStorage: true,
+      deviceMemory: true,
+      hardwareConcurrency: true,
+      teeDetection: false,
+      biometricAuth: true
     }
   },
-  [BrowserType.BRAVE]: {
-    // Similar to Chrome but with enhanced privacy
-    [DeviceType.DESKTOP_WINDOWS]: {
+  {
+    browser: BrowserType.OPERA,
+    minVersion: '76',
+    device: [
+      DeviceType.DESKTOP_WINDOWS,
+      DeviceType.DESKTOP_MAC,
+      DeviceType.DESKTOP_LINUX,
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
       webCrypto: true,
       secureContext: true,
       webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    // Other platforms similar
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: true,
-      secureContext: true,
-      webAuthn: true,
-      biometricAuth: true,
-      teeDetection: false
+      secureCookies: true,
+      contentSecurityPolicy: true,
+      subresourceIntegrity: true,
+      credentialManagement: true,
+      publicKeyCredential: true,
+      indexedDBEncryption: true,
+      secureStorage: true,
+      deviceMemory: true,
+      hardwareConcurrency: true,
+      teeDetection: false,
+      biometricAuth: true
     }
   },
-  [BrowserType.IE]: {
-    // Legacy browser with minimal modern security support
-    [DeviceType.DESKTOP_WINDOWS]: {
+  {
+    browser: BrowserType.SAMSUNG,
+    minVersion: '14.0',
+    device: [
+      DeviceType.MOBILE_ANDROID,
+      DeviceType.TABLET_ANDROID
+    ],
+    capabilities: {
+      webCrypto: true,
+      secureContext: true,
+      webAuthn: true,
+      secureCookies: true,
+      contentSecurityPolicy: true,
+      subresourceIntegrity: true,
+      credentialManagement: true,
+      publicKeyCredential: true,
+      indexedDBEncryption: true,
+      secureStorage: true,
+      deviceMemory: true,
+      hardwareConcurrency: true,
+      teeDetection: false,
+      biometricAuth: true
+    }
+  },
+  {
+    browser: BrowserType.IE,
+    minVersion: 'Not Supported',
+    device: [
+      DeviceType.DESKTOP_WINDOWS
+    ],
+    capabilities: {
       webCrypto: false,
       secureContext: false,
       webAuthn: false,
-      secureCookies: true,
+      secureCookies: false,
       contentSecurityPolicy: false,
       subresourceIntegrity: false,
       credentialManagement: false,
@@ -754,116 +256,85 @@ const compatibilityTable: Record<BrowserType, Record<DeviceType, Partial<Securit
       hardwareConcurrency: false,
       teeDetection: false,
       biometricAuth: false
-    },
-    // Not available on other platforms
-    [DeviceType.DESKTOP_MAC]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.DESKTOP_LINUX]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_IOS]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.MOBILE_ANDROID]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_IOS]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
-    },
-    [DeviceType.TABLET_ANDROID]: {
-      webCrypto: false,
-      secureContext: false,
-      webAuthn: false,
-      biometricAuth: false,
-      teeDetection: false
     }
   }
-};
+];
 
-// Function to generate a compatibility report
+/**
+ * Generate a compatibility report for all browsers and security features
+ */
 function generateCompatibilityReport(): string {
-  let report = "Browser Compatibility Report for TEE and Security Features\n";
-  report += "==========================================================\n\n";
+  let report = "SecureWallet Browser Compatibility Report\n";
+  report += "=============================================\n\n";
+  report += "This report shows which browsers support the security features used in SecureWallet.\n\n";
   
-  // Summary of direct TEE access
-  report += "Direct TEE Access Support:\n";
-  report += "--------------------------\n";
-  report += "- No major browser currently provides direct access to TEE technologies\n";
-  report += "- Access requires native applications or browser extensions with special permissions\n";
-  report += "- WebAuthn provides indirect access to some secure hardware features\n\n";
+  // Calculate aggregate compatibility score for each browser
+  const browserScores = browserCapabilities.map(browser => {
+    const capabilityKeys = Object.keys(browser.capabilities) as (keyof SecurityCapabilities)[];
+    const totalCapabilities = capabilityKeys.length;
+    const supportedCapabilities = capabilityKeys.filter(key => browser.capabilities[key]).length;
+    const compatibilityScore = (supportedCapabilities / totalCapabilities) * 100;
+    
+    return {
+      browser: browser.browser,
+      minVersion: browser.minVersion,
+      compatibilityScore: Math.round(compatibilityScore),
+      supportedCapabilities,
+      totalCapabilities
+    };
+  });
   
-  // Best options for each platform
-  report += "Recommended Implementation by Platform:\n";
-  report += "-------------------------------------\n";
+  // Sort by compatibility score (highest first)
+  browserScores.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
   
-  report += "iOS Devices (iPhone, iPad):\n";
-  report += "- Use software fallback with WebAuthn for biometric auth\n";
-  report += "- Safari provides the best integration with Secure Enclave via WebAuthn\n";
-  report += "- No direct access to Secure Enclave from web apps\n";
-  report += "- Consider a native app companion for critical security operations\n\n";
+  // Add browser compatibility scores to the report
+  report += "Browser Compatibility Scores:\n";
+  report += "---------------------------\n";
+  browserScores.forEach(score => {
+    const status = score.compatibilityScore >= 80 ? "✅ Fully Compatible" : 
+                  score.compatibilityScore >= 50 ? "⚠️ Partially Compatible" : 
+                  "❌ Not Compatible";
+    
+    report += `${score.browser} (v${score.minVersion}): ${score.compatibilityScore}% (${score.supportedCapabilities}/${score.totalCapabilities}) - ${status}\n`;
+  });
   
-  report += "Android Devices:\n";
-  report += "- Use software fallback with WebAuthn for biometric auth\n";
-  report += "- Chrome/Samsung Internet provide good WebAuthn support\n";
-  report += "- No direct access to TrustZone from web apps\n";
-  report += "- Consider a native app companion for critical security operations\n\n";
+  // Add detailed feature support matrix
+  report += "\nDetailed Security Feature Support:\n";
+  report += "-------------------------------\n";
   
-  report += "Windows Desktop:\n";
-  report += "- Edge has best integration with Windows Hello biometrics\n";
-  report += "- All modern browsers support WebCrypto for secure operations\n";
-  report += "- No direct TPM access from browsers\n";
-  report += "- Use WebAuthn for hardware-backed key operations where possible\n\n";
+  // Get all capability keys
+  const capabilityKeys = Object.keys(browserCapabilities[0].capabilities) as (keyof SecurityCapabilities)[];
   
-  report += "Mac Desktop:\n";
-  report += "- Safari has best integration with Touch ID on supported Macs\n";
-  report += "- All modern browsers support WebCrypto for secure operations\n";
-  report += "- No direct Secure Enclave access from browsers\n";
-  report += "- Use WebAuthn for Touch ID authentication where available\n\n";
+  // For each feature, show which browsers support it
+  capabilityKeys.forEach(feature => {
+    report += `\n${feature}:\n`;
+    
+    browserCapabilities.forEach(browser => {
+      const supported = browser.capabilities[feature];
+      const icon = supported ? "✅" : "❌";
+      report += `  ${icon} ${browser.browser} (v${browser.minVersion})\n`;
+    });
+  });
   
-  // Implementation recommendations
-  report += "Recommended Security Implementation:\n";
-  report += "----------------------------------\n";
-  report += "1. Use software fallback for TEE simulation in all browsers\n";
-  report += "2. Implement WebAuthn for biometric authentication and hardware-backed credentials\n";
-  report += "3. Use WebCrypto API for all cryptographic operations\n";
-  report += "4. Consider a hybrid approach with a native app for critical security operations\n";
-  report += "5. Implement robust feature detection to adapt to available capabilities\n";
-  report += "6. Use secure, HTTP-only cookies and implement proper CSRF protection\n";
-  report += "7. Apply Content Security Policy to prevent XSS attacks\n\n";
+  report += "\nRecommended Browsers:\n";
+  report += "--------------------\n";
+  const recommendedBrowsers = browserScores
+    .filter(score => score.compatibilityScore >= 90)
+    .map(score => `${score.browser} (v${score.minVersion} or later)`);
   
-  // Fallback strategy
-  report += "TEE Fallback Strategy:\n";
-  report += "---------------------\n";
-  report += "When no secure hardware is available, implement a software-based TEE simulation that:\n";
-  report += "1. Uses the best available entropy source for secure random generation\n";
-  report += "2. Leverages WebCrypto for all cryptographic operations\n";
-  report += "3. Stores sensitive data in IndexedDB with proper encryption\n";
-  report += "4. Implements memory protection to minimize data exposure\n";
-  report += "5. Provides clear UI indicators when operating in fallback mode\n";
+  report += recommendedBrowsers.join("\n");
   
   return report;
 }
 
-// Run the audit
-console.log(generateCompatibilityReport());
+// When running the script directly
+if (typeof require !== 'undefined' && require.main === module) {
+  console.log(generateCompatibilityReport());
+}
+
+export {
+  BrowserType,
+  DeviceType,
+  browserCapabilities,
+  generateCompatibilityReport
+};

@@ -1,0 +1,91 @@
+{
+  "passed": 14,
+  "failed": 0,
+  "warnings": 0,
+  "details": [
+    {
+      "component": "Authentication",
+      "test": "Passwordless Components",
+      "status": "PASS",
+      "message": "Passwordless authentication components are present"
+    },
+    {
+      "component": "Hardware Wallets",
+      "test": "Integration Components",
+      "status": "PASS",
+      "message": "Hardware wallet integration components are present"
+    },
+    {
+      "component": "Security",
+      "test": "Secure Environment Detection",
+      "status": "PASS",
+      "message": "Secure environment detection module is present"
+    },
+    {
+      "component": "Cross-Platform",
+      "test": "Build Configuration",
+      "status": "PASS",
+      "message": "Cross-platform build configuration is present"
+    },
+    {
+      "component": "Authentication",
+      "test": "Password Hashing",
+      "status": "PASS",
+      "message": "Proper password hashing with bcrypt is implemented"
+    },
+    {
+      "component": "Authentication",
+      "test": "Session Management",
+      "status": "PASS",
+      "message": "Session management is implemented"
+    },
+    {
+      "component": "Security",
+      "test": "Security Headers",
+      "status": "PASS",
+      "message": "All required security headers are implemented"
+    },
+    {
+      "component": "Security",
+      "test": "CSRF Protection",
+      "status": "PASS",
+      "message": "CSRF protection is implemented"
+    },
+    {
+      "component": "Error Handling",
+      "test": "hardware-wallets.ts",
+      "status": "PASS",
+      "message": "File includes proper error handling"
+    },
+    {
+      "component": "Error Handling",
+      "test": "passwordless-auth.ts",
+      "status": "PASS",
+      "message": "File includes proper error handling"
+    },
+    {
+      "component": "Error Handling",
+      "test": "secure-environment.ts",
+      "status": "PASS",
+      "message": "File includes proper error handling"
+    },
+    {
+      "component": "Error Handling",
+      "test": "auth.ts",
+      "status": "PASS",
+      "message": "File includes proper error handling"
+    },
+    {
+      "component": "Security",
+      "test": "Fallback Mechanism",
+      "status": "PASS",
+      "message": "Secure environment provides proper fallback mechanisms"
+    },
+    {
+      "component": "Compatibility",
+      "test": "Browser Tests",
+      "status": "PASS",
+      "message": "Browser compatibility tests are present"
+    }
+  ]
+}
