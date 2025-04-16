@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Flame, TrendingUp, ArrowDownRight, Timer, Percent, Scales, Share2, CandlestickChart } from "lucide-react";
+import { Flame, TrendingUp, ArrowDownRight, Timer, Percent, Scale, Share2, CandlestickChart } from "lucide-react";
 import { tokenomicsConfig } from '@/lib/tokenomics';
 import { monetizationConfig } from '@/lib/monetization';
 
@@ -246,7 +246,7 @@ export const DiscountTokenOverview = ({
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="bg-primary/10 p-2 rounded-full">
-                    <Scales className="h-5 w-5 text-primary" />
+                    <Scale className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <h4 className="text-sm font-medium">Fee Collection</h4>

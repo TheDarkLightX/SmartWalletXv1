@@ -13,7 +13,14 @@ export const TokenomicsOverview = () => {
   
   // Format fee percentage for display
   const feePercentage = (tokenomicsConfig.transactionFee * 100).toFixed(2);
-  const discountedFeePercentage = (tokenomicsConfig.transactionFee * tokenomicsConfig.discountWithToken * 100).toFixed(2);
+  
+  // Get max discount from the last tier
+  const maxDiscount = tokenomicsConfig.discountToken.discountTiers[
+    tokenomicsConfig.discountToken.discountTiers.length - 1
+  ].discount;
+  
+  // Calculate the discounted fee with maximum token discount
+  const discountedFeePercentage = (tokenomicsConfig.transactionFee * (1 - maxDiscount) * 100).toFixed(2);
   
   // Format distribution percentages
   const noExpectationsPercent = (tokenomicsConfig.noExpectationsFundPercentage * 100).toFixed(0);
