@@ -9,11 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, ShieldCheck, Eye, EyeOff, Lock, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import PrivateTransactionForm from "@/components/wallet/PrivateTransactionForm";
+import EnhancedPrivateTransactionForm from "@/components/wallet/EnhancedPrivateTransactionForm";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
+import { PrivacyLevel } from "@/lib/zk-proofs";
 
 export default function PrivacyTools() {
   const { toast } = useToast();
