@@ -8,38 +8,12 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { tokenomicsConfig } from '@/lib/tokenomics';
 
 export const BuyAndBurnDashboard = () => {
   const [activeTab, setActiveTab] = useState("distribution");
   
-  // Mock data for distribution pie chart
-  const distributionData = [
-    { name: 'No Expectations Fund', value: tokenomicsConfig.noExpectationsFundPercentage },
-    { name: 'Buy & Burn', value: tokenomicsConfig.buyAndBurnPercentage },
-  ];
-  
-  // Mock data for burn allocation
-  const burnAllocationData = [
-    { name: 'PLS', value: 60 },
-    { name: 'PulseX', value: 40 },
-  ];
-  
-  // Mock data for burn history
-  const burnHistoryData = [
-    { month: 'Jan', amount: 12500 },
-    { month: 'Feb', amount: 14200 },
-    { month: 'Mar', amount: 18900 },
-    { month: 'Apr', amount: 23400 },
-    { month: 'May', amount: 28100 },
-    { month: 'Jun', amount: 34200 },
-  ];
-  
-  // Colors for pie charts
-  const DISTRIBUTION_COLORS = ['#6366f1', '#a855f7']; // indigo, purple
-  const BURN_ALLOCATION_COLORS = ['#ec4899', '#f97316']; // pink, orange
-  
+  // Format a number as currency
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString()}`;
   };
@@ -61,39 +35,31 @@ export const BuyAndBurnDashboard = () => {
           </TabsList>
           
           <TabsContent value="distribution" className="space-y-4">
-            <div className="pt-4">
+            <div className="pt-8">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="h-[240px]"
+                className="flex flex-col items-center justify-center space-y-8"
               >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {distributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `${value}%`} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {/* Simple visual representation of distribution */}
+                <div className="w-full max-w-md h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-indigo-500" 
+                    style={{ width: `${tokenomicsConfig.noExpectationsFundPercentage * 100}%` }}
+                  ></div>
+                </div>
+                <div className="w-full flex justify-between text-sm text-gray-500">
+                  <span>No Expectations Fund: {tokenomicsConfig.noExpectationsFundPercentage * 100}%</span>
+                  <span>Buy & Burn: {tokenomicsConfig.buyAndBurnPercentage * 100}%</span>
+                </div>
               </motion.div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-4 pt-2 mt-6">
               <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
                 <div className="text-indigo-700 dark:text-indigo-400 font-medium mb-1 text-sm">No Expectations Fund</div>
-                <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{tokenomicsConfig.noExpectationsFundPercentage}%</div>
+                <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{tokenomicsConfig.noExpectationsFundPercentage * 100}%</div>
                 <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-1">
                   Funds developers without requiring continued development
                 </div>
@@ -101,7 +67,7 @@ export const BuyAndBurnDashboard = () => {
               
               <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
                 <div className="text-purple-700 dark:text-purple-400 font-medium mb-1 text-sm">Buy & Burn</div>
-                <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">{tokenomicsConfig.buyAndBurnPercentage}%</div>
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">{tokenomicsConfig.buyAndBurnPercentage * 100}%</div>
                 <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
                   Automatic purchase and burning of tokens
                 </div>
@@ -110,36 +76,26 @@ export const BuyAndBurnDashboard = () => {
           </TabsContent>
           
           <TabsContent value="allocation" className="space-y-4">
-            <div className="pt-4">
+            <div className="pt-8">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="h-[240px]"
+                className="flex flex-col items-center justify-center space-y-8"
               >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={burnAllocationData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {burnAllocationData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={BURN_ALLOCATION_COLORS[index % BURN_ALLOCATION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `${value}%`} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {/* Simple visual representation of burn allocation */}
+                <div className="w-full max-w-md h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                  <div className="h-full bg-pink-500" style={{ width: '60%' }}></div>
+                  <div className="h-full bg-orange-500" style={{ width: '40%' }}></div>
+                </div>
+                <div className="w-full flex justify-between text-sm text-gray-500">
+                  <span>PLS: 60%</span>
+                  <span>PulseX: 40%</span>
+                </div>
               </motion.div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-4 pt-2 mt-6">
               <div className="p-4 rounded-lg bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800">
                 <div className="text-pink-700 dark:text-pink-400 font-medium mb-1 text-sm">PLS Token</div>
                 <div className="text-2xl font-bold text-pink-700 dark:text-pink-400">60%</div>
@@ -159,28 +115,36 @@ export const BuyAndBurnDashboard = () => {
           </TabsContent>
           
           <TabsContent value="history">
-            <div className="pt-4">
+            <div className="pt-8">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="h-[300px]"
+                className="space-y-4"
               >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={burnHistoryData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `$${value/1000}k`} />
-                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                    <Legend />
-                    <Bar dataKey="amount" name="Tokens Burned (USD Value)" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="grid grid-cols-6 gap-2">
+                  {[12500, 14200, 18900, 23400, 28100, 34200].map((amount, index) => {
+                    const maxAmount = 35000;
+                    const height = Math.floor((amount / maxAmount) * 200);
+                    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][index];
+                    
+                    return (
+                      <div key={month} className="flex flex-col items-center">
+                        <div className="flex flex-col items-center justify-end h-[200px]">
+                          <div 
+                            className="w-12 bg-purple-500 rounded-t-md" 
+                            style={{ height: `${height}px` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs mt-1">{month}</span>
+                        <span className="text-xs text-gray-500">${(amount/1000).toFixed(1)}k</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </motion.div>
               
-              <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+              <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-blue-700 dark:text-blue-400 font-medium text-sm">Total Burned (2024)</div>
