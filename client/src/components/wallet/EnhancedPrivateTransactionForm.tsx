@@ -143,7 +143,7 @@ const EnhancedPrivateTransactionForm = ({ onComplete }: EnhancedPrivateTransacti
   };
   
   // Get stealth address
-  const getStealthAddress = (address: string): string => {
+  const getStealthAddress = (address: string | undefined): string => {
     if (!address) return '';
     
     // In a real app, this would use a secure private key

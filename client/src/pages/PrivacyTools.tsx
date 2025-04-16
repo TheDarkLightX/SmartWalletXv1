@@ -30,18 +30,18 @@ export default function PrivacyTools() {
   const userId = 1;
 
   // Fetch wallet
-  const { data: wallets } = useQuery({
+  const { data: wallets = [] } = useQuery<any[]>({
     queryKey: [`/api/users/${userId}/wallets`],
   });
 
   // Fetch transactions with privacy features
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: [`/api/wallets/${wallets?.[0]?.id}/transactions`],
+  const { data: transactions = [], isLoading } = useQuery<any[]>({
+    queryKey: [`/api/wallets/${wallets[0]?.id}/transactions`],
     enabled: !!wallets && wallets.length > 0,
   });
 
   // Filter private transactions
-  const privateTransactions = transactions?.filter(tx => tx.isPrivate) || [];
+  const privateTransactions = transactions.filter((tx: any) => tx.isPrivate) || [];
 
   // Handle privacy settings update
   const updatePrivacySettings = useMutation({
@@ -84,8 +84,8 @@ export default function PrivacyTools() {
                 New Private Transaction
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <PrivateTransactionForm onComplete={() => setShowNewTxDialog(false)} />
+            <DialogContent className="sm:max-w-[525px]">
+              <EnhancedPrivateTransactionForm onComplete={() => setShowNewTxDialog(false)} />
             </DialogContent>
           </Dialog>
         </div>

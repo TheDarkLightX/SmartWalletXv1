@@ -254,11 +254,12 @@ export const generateStealthAddress = (
 ): string => {
   // In a real implementation, this would generate a stealth address
   // For now, we're just creating a deterministic hash based on the inputs
+  const timestamp = ethers.hexlify(ethers.toUtf8Bytes(Date.now().toString()));
   const stealthAddressSeed = ethers.keccak256(
     ethers.concat([
       ethers.getBytes(recipientAddress),
       ethers.getBytes(privateKey),
-      ethers.getBytes(ethers.hexlify(Date.now()))
+      ethers.getBytes(timestamp)
     ])
   );
   
