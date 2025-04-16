@@ -14,6 +14,20 @@ import {
   insertAiConversationSchema
 } from "@shared/schema";
 
+// Utility function to validate IDs in route parameters
+function validatePositiveId(id: string): { valid: boolean, value?: number, message?: string } {
+  if (!/^\d+$/.test(id)) {
+    return { valid: false, message: "ID must be a numeric value" };
+  }
+  
+  const numericId = parseInt(id, 10);
+  if (numericId <= 0) {
+    return { valid: false, message: "ID must be a positive number" };
+  }
+  
+  return { valid: true, value: numericId };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
 
@@ -151,7 +165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/transactions/:id", async (req: Request, res: Response) => {
     try {
-      const transactionId = parseInt(req.params.id);
+      const idParam = req.params.id;
+      // Validate id is a positive number
+      if (!/^\d+$/.test(idParam) || parseInt(idParam) <= 0) {
+        return res.status(400).json({ message: "Invalid transaction ID format" });
+      }
+      
+      const transactionId = parseInt(idParam);
       const transaction = await storage.getTransaction(transactionId);
       
       if (!transaction) {
@@ -166,7 +186,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/wallets/:walletId/transactions", async (req: Request, res: Response) => {
     try {
-      const walletId = parseInt(req.params.walletId);
+      const idParam = req.params.walletId;
+      // Validate walletId is a positive number
+      if (!/^\d+$/.test(idParam) || parseInt(idParam) <= 0) {
+        return res.status(400).json({ message: "Invalid wallet ID format" });
+      }
+      
+      const walletId = parseInt(idParam);
       const wallet = await storage.getWallet(walletId);
       
       if (!wallet) {
@@ -182,7 +208,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/users/:userId/transactions", async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const validation = validatePositiveId(req.params.userId);
+      if (!validation.valid) {
+        return res.status(400).json({ message: validation.message });
+      }
+      
+      const userId = validation.value!;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -264,7 +295,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/strategies/:id", async (req: Request, res: Response) => {
     try {
-      const strategyId = parseInt(req.params.id);
+      const validation = validatePositiveId(req.params.id);
+      if (!validation.valid) {
+        return res.status(400).json({ message: validation.message });
+      }
+      
+      const strategyId = validation.value!;
       const strategy = await storage.getStrategy(strategyId);
       
       if (!strategy) {

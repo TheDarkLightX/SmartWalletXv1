@@ -61,18 +61,22 @@ app.use((req, res, next) => {
           
           // Store in session
           if (req.session) {
+            // Initialize securityTokens if it doesn't exist
             if (!req.session.securityTokens) {
               req.session.securityTokens = {};
             }
             
             // Set expiration 1 hour from now
             const expiryTime = Date.now() + (60 * 60 * 1000);
-            req.session.securityTokens[token] = expiryTime;
+            
+            // Safely access securityTokens
+            const securityTokens = req.session.securityTokens;
+            securityTokens[token] = expiryTime;
             
             // Clean up expired tokens
-            Object.keys(req.session.securityTokens).forEach(key => {
-              if (req.session.securityTokens[key] < Date.now()) {
-                delete req.session.securityTokens[key];
+            Object.keys(securityTokens).forEach(key => {
+              if (securityTokens[key] < Date.now()) {
+                delete securityTokens[key];
               }
             });
             
