@@ -25,7 +25,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
         </div>
         
         <div 
-          onClick={() => window.location.href = "/wallet/create"} 
+          onClick={() => setLocation("/wallet/create")} 
           className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
             isActiveRoute("/wallet/create") ? "bg-gray-100 dark:bg-dark-600" : ""
           }`}
@@ -34,7 +34,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
         </div>
         
         <div 
-          onClick={() => window.location.href = "/"} 
+          onClick={() => setLocation("/")} 
           className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
             isActiveRoute("/") ? "bg-gray-100 dark:bg-dark-600" : ""
           }`}

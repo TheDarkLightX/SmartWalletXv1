@@ -141,8 +141,8 @@ Generated on: ${new Date().toLocaleString()}
         localStorage.setItem('hasEncryptedWallet', 'true');
       }
       
-      // Navigate to home page/dashboard
-      window.location.href = '/';
+      // Navigate to dashboard using wouter
+      setLocation('/');
       
       toast({
         title: "Wallet Ready",
