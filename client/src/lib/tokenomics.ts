@@ -5,15 +5,23 @@
  * and Buy & Burn (75%) mechanisms
  */
 
+// Export a tokenomics configuration object for easy access throughout the app
+export const tokenomicsConfig = {
+  feePercentage: 0.002,
+  devFundPercentage: 0.25,
+  buyBurnPercentage: 0.75,
+  devFundAddress: '0x3bE00923dF0D7fb06f79fc0628525b855797d8F8'
+};
+
 import { ethers } from 'ethers';
 
-// Developer fund address - No Expectations Fund (40% of fees)
+// Developer fund address - No Expectations Fund (25% of fees)
 export const DEVELOPER_FUND_ADDRESS = '0x3bE00923dF0D7fb06f79fc0628525b855797d8F8';
 
 // Constants for tokenomics settings
 export const FEE_PERCENTAGE = 0.002; // 0.2% transaction fee
-export const DEVELOPER_FUND_PERCENTAGE = 0.40; // 40% of fees go to dev fund
-export const BUY_BURN_PERCENTAGE = 0.60; // 60% of fees go to buy & burn
+export const DEVELOPER_FUND_PERCENTAGE = 0.25; // 25% of fees go to dev fund
+export const BUY_BURN_PERCENTAGE = 0.75; // 75% of fees go to buy & burn
 
 // Token discounts (hold tokens to get fee discounts)
 export const TOKEN_DISCOUNT_TIERS = [
@@ -127,9 +135,9 @@ export async function getTokenomicsStats(provider: ethers.JsonRpcProvider): Prom
   
   // In production, these would be fetched from contract events or a database
   // For now, we'll return placeholder values based on current developer fund balance
-  // This assumes the 40/60 split has been maintained historically
-  const estimatedTotalFees = devFundBalance.mul(100).div(40);
-  const estimatedBurned = estimatedTotalFees.mul(60).div(100);
+  // This assumes the 25/75 split has been maintained historically
+  const estimatedTotalFees = devFundBalance.mul(100).div(25);
+  const estimatedBurned = estimatedTotalFees.mul(75).div(100);
   
   return {
     totalFeeCollected: ethers.formatEther(estimatedTotalFees),

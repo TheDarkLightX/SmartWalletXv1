@@ -11,9 +11,9 @@ import {
 } from "@/lib/tokenomics";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
-import BuyAndBurnDashboard from "./BuyAndBurnDashboard";
-import TokenFlowVisualization from "./TokenFlowVisualization";
-import DiscountTokenOverview from "./DiscountTokenOverview";
+import { BuyAndBurnDashboard } from "./BuyAndBurnDashboard";
+import { TokenFlowVisualization } from "./TokenFlowVisualization";
+import { DiscountTokenOverview } from "./DiscountTokenOverview";
 
 export default function TokenomicsOverview() {
   const [activeTab, setActiveTab] = useState("overview");
