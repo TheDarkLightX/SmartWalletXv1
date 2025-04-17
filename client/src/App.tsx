@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import NotFound from "./pages/not-found";
 import WalletCreation from "./pages/WalletCreation";
+import Dashboard from "./pages/Dashboard";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import MobileNav from "./components/layout/MobileNav";
@@ -11,12 +12,12 @@ import SecurityDisclaimer from "./components/layout/SecurityDisclaimer";
 import { useState } from "react";
 import { useIsMobile } from "./hooks/use-mobile";
 
-// Simple router focusing just on wallet creation for now
-function SimpleRouter() {
+// Wallet application router
+function AppRouter() {
   return (
     <Switch>
       <Route path="/wallet/create" component={WalletCreation} />
-      <Route path="/" component={WalletCreation} />
+      <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -50,7 +51,7 @@ function App() {
             <div className="container px-4 py-4">
               <SecurityDisclaimer />
             </div>
-            <SimpleRouter />
+            <AppRouter />
           </main>
           {isMobile && <MobileNav />}
         </div>

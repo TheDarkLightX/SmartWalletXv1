@@ -1,11 +1,11 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
 const Sidebar = ({ onClose }: SidebarProps) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const isActiveRoute = (route: string) => {
     return location === route;
