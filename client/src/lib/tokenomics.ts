@@ -99,8 +99,11 @@ export async function distributeFee(
   const amountBN = ethers.parseEther(amount);
   
   // Calculate distribution amounts
-  const developerFundAmount = amountBN.mul(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000)).div(10000);
-  const buyAndBurnAmount = amountBN.mul(Math.floor(BUY_BURN_PERCENTAGE * 10000)).div(10000);
+  const devFundMultiplier = BigInt(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000));
+  const developerFundAmount = (amountBN * devFundMultiplier) / BigInt(10000);
+  
+  const buyBurnMultiplier = BigInt(Math.floor(BUY_BURN_PERCENTAGE * 10000));
+  const buyAndBurnAmount = (amountBN * buyBurnMultiplier) / BigInt(10000);
   
   // Send fee to developer fund
   const devFundTx = await signer.sendTransaction({
@@ -140,8 +143,8 @@ export async function getTokenomicsStats(provider: ethers.JsonRpcProvider): Prom
   // In production, these would be fetched from contract events or a database
   // For now, we'll return placeholder values based on current developer fund balance
   // This assumes the 25/75 split has been maintained historically
-  const estimatedTotalFees = devFundBalance.mul(100).div(25);
-  const estimatedBurned = estimatedTotalFees.mul(75).div(100);
+  const estimatedTotalFees = (devFundBalance * BigInt(100)) / BigInt(25);
+  const estimatedBurned = (estimatedTotalFees * BigInt(75)) / BigInt(100);
   
   return {
     totalFeeCollected: ethers.formatEther(estimatedTotalFees),
