@@ -77,17 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (data) => {
-      if (data.success) {
+      console.log("Registration response:", data);
+      if (data && data.success) {
+        // Set the user data in the cache
         queryClient.setQueryData(["/api/current-user"], data.user);
+        
+        // Show success message
         toast({
           title: "Registration successful",
           description: "Your account has been created successfully!",
         });
       } else {
-        throw new Error(data.message || "Registration failed");
+        // Handle case where success is false but didn't throw an error
+        throw new Error(data?.message || "Registration failed");
       }
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: error.message,

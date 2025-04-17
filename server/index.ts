@@ -96,6 +96,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     // Skip validation for authentication endpoints
     if (req.path === '/api/login' || 
+        req.path === '/api/register' || 
         req.path === '/api/signup' || 
         req.path.startsWith('/api/ws-auth')) {
       next();
