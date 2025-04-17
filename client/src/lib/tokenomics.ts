@@ -1,168 +1,236 @@
-import { ethers } from "ethers";
-import { getProvider } from "./ethers";
+/**
+ * Tokenomics Implementation for SecureWallet
+ * 
+ * This module implements the tokenomics system with the "No Expectations Fund" (25%)
+ * and Buy & Burn (75%) mechanisms
+ */
 
-// Tokenomics configuration
-export const tokenomicsConfig = {
-  // Fee structure
-  transactionFee: 0.002, // 0.2% fee on transactions
-  
-  // Revenue distribution
-  noExpectationsFundPercentage: 0.25, // 25% to "No Expectations" fund (donation to developers)
-  buyAndBurnPercentage: 0.75, // 75% to buy and burn PLS/PulseX (increased from 60%)
-  
-  // Addresses
-  noExpectationsFundAddress: "0xNO_EXPECTATIONS_FUND_ADDRESS", // Replace with actual address
-  buyAndBurnContractAddress: "0xBUY_AND_BURN_CONTRACT", // Replace with actual address
-  walletTokenAddress: "0xWALLET_TOKEN_ADDRESS", // Replace with actual address
-  burnAddress: "0x000000000000000000000000000000000000dEaD",
-  
-  // Discount token mechanics
-  discountToken: {
-    symbol: "WALLET",
-    initialSupply: 100000000, // 100 million tokens
-    
-    // Discount tiers based on token holdings as percentage of total supply
-    discountTiers: [
-      { minHoldingPercent: 0.001, discount: 0.05 }, // 0.001% supply = 5% discount
-      { minHoldingPercent: 0.01, discount: 0.10 },  // 0.01% supply = 10% discount
-      { minHoldingPercent: 0.05, discount: 0.15 },  // 0.05% supply = 15% discount
-      { minHoldingPercent: 0.10, discount: 0.20 },  // 0.1% supply = 20% discount
-      { minHoldingPercent: 0.25, discount: 0.25 },  // 0.25% supply = 25% discount
-      { minHoldingPercent: 0.50, discount: 0.30 },  // 0.5% supply = 30% discount (max)
-    ],
-    
-    // Buy & Burn schedule
-    buybackSchedule: {
-      transactionThreshold: "10", // Trigger buyback after collecting 10 PLS
-      executionFrequency: 86400,  // Execute once per day (in seconds)
-      lastExecutionTimestamp: 0   // Timestamp of last execution
-    },
-    
-    // Token distribution
-    distribution: {
-      public: 70,        // 70% for public sale
-      development: 20,   // 20% for development team (locked/vested)
-      noExpectations: 10 // 10% for No Expectations Fund
-    }
-  }
-};
+import { ethers } from 'ethers';
 
-// Calculate discount based on token holdings
-export const calculateTokenDiscount = (
-  tokenHoldings: string,
-  totalSupply: string = tokenomicsConfig.discountToken.initialSupply.toString()
-): number => {
-  // Convert to numbers for percentage calculation
-  const holdings = parseFloat(tokenHoldings);
-  const supply = parseFloat(totalSupply);
+// Developer fund address - No Expectations Fund (25% of fees)
+export const DEVELOPER_FUND_ADDRESS = '0x3bE00923dF0D7fb06f79fc0628525b855797d8F8';
+
+// Constants for tokenomics settings
+export const FEE_PERCENTAGE = 0.002; // 0.2% transaction fee
+export const DEVELOPER_FUND_PERCENTAGE = 0.25; // 25% of fees go to dev fund
+export const BUY_BURN_PERCENTAGE = 0.75; // 75% of fees go to buy & burn
+
+// Token discounts (hold tokens to get fee discounts)
+export const TOKEN_DISCOUNT_TIERS = [
+  { minTokens: 1000, discountPercentage: 0.05 }, // 5% discount with 1,000 tokens
+  { minTokens: 5000, discountPercentage: 0.10 }, // 10% discount with 5,000 tokens
+  { minTokens: 10000, discountPercentage: 0.15 }, // 15% discount with 10,000 tokens
+  { minTokens: 25000, discountPercentage: 0.20 }, // 20% discount with 25,000 tokens
+  { minTokens: 50000, discountPercentage: 0.25 }, // 25% discount with 50,000 tokens
+  { minTokens: 100000, discountPercentage: 0.30 }, // 30% discount with 100,000 tokens
+];
+
+/**
+ * Calculate fee for a given transaction amount
+ * @param amount - Transaction amount in base units (wei, gwei, etc.)
+ * @param tokenBalance - User's token balance for discount calculation
+ * @returns Object containing fee amounts and distribution
+ */
+export function calculateFee(amount: string, tokenBalance: number = 0): {
+  totalFee: string;
+  developerFund: string;
+  buyAndBurn: string;
+  discountApplied: number;
+  effectiveFeePercentage: number;
+} {
+  // Convert amount to BigNumber for safe calculations
+  const amountBN = ethers.parseUnits(amount, 'ether');
   
-  // Calculate holding percentage
-  const holdingPercentage = (holdings / supply) * 100;
-  
-  // Find the appropriate discount tier
-  const tiers = tokenomicsConfig.discountToken.discountTiers;
-  let discount = 0;
-  
-  for (let i = tiers.length - 1; i >= 0; i--) {
-    if (holdingPercentage >= tiers[i].minHoldingPercent * 100) {
-      discount = tiers[i].discount;
+  // Calculate discount based on token balance
+  let discountPercentage = 0;
+  for (const tier of TOKEN_DISCOUNT_TIERS) {
+    if (tokenBalance >= tier.minTokens) {
+      discountPercentage = tier.discountPercentage;
+    } else {
       break;
     }
   }
   
-  return discount;
-};
+  // Calculate effective fee percentage after discount
+  const effectiveFeePercentage = FEE_PERCENTAGE * (1 - discountPercentage);
+  
+  // Calculate total fee
+  const totalFeeBN = amountBN.mul(Math.floor(effectiveFeePercentage * 10000)).div(10000);
+  
+  // Calculate distribution
+  const developerFundBN = totalFeeBN.mul(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000)).div(10000);
+  const buyAndBurnBN = totalFeeBN.mul(Math.floor(BUY_BURN_PERCENTAGE * 10000)).div(10000);
+  
+  // Return values converted to strings
+  return {
+    totalFee: ethers.formatEther(totalFeeBN),
+    developerFund: ethers.formatEther(developerFundBN),
+    buyAndBurn: ethers.formatEther(buyAndBurnBN),
+    discountApplied: discountPercentage,
+    effectiveFeePercentage
+  };
+}
 
-// Calculate transaction fee with possible token discount
-export const calculateTransactionFee = (
-  amount: string, 
-  tokenHoldings: string = "0",
-  totalSupply: string = tokenomicsConfig.discountToken.initialSupply.toString()
-): string => {
+/**
+ * Distribute transaction fee according to tokenomics rules
+ * @param provider - Ethereum provider
+ * @param signer - Transaction signer
+ * @param amount - Fee amount in base units
+ * @returns Promise resolving to transaction hash
+ */
+export async function distributeFee(
+  provider: ethers.JsonRpcProvider,
+  signer: ethers.Signer,
+  amount: string
+): Promise<string> {
+  // Parse amount as BigNumber
   const amountBN = ethers.parseEther(amount);
   
-  // Get discount based on token holdings
-  const discount = calculateTokenDiscount(tokenHoldings, totalSupply);
+  // Calculate distribution amounts
+  const developerFundAmount = amountBN.mul(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000)).div(10000);
+  const buyAndBurnAmount = amountBN.mul(Math.floor(BUY_BURN_PERCENTAGE * 10000)).div(10000);
   
-  // Apply discount to base fee
-  const discountedFeeRate = tokenomicsConfig.transactionFee * (1 - discount);
+  // Send fee to developer fund
+  const devFundTx = await signer.sendTransaction({
+    to: DEVELOPER_FUND_ADDRESS,
+    value: developerFundAmount
+  });
   
-  // Calculate fee
-  const feeBN = amountBN * BigInt(Math.floor(discountedFeeRate * 10000)) / BigInt(10000);
-  return ethers.formatEther(feeBN);
-};
+  await devFundTx.wait();
+  
+  // Execute buy and burn mechanism (implementation will depend on DEX integration)
+  // For production, this would integrate with PulseX or another DEX on PulseChain
+  // For now, we'll just send to a designated burn address
+  const BURN_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+  
+  const burnTx = await signer.sendTransaction({
+    to: BURN_ADDRESS,
+    value: buyAndBurnAmount
+  });
+  
+  await burnTx.wait();
+  
+  // Return transaction hash of the developer fund transaction
+  return devFundTx.hash;
+}
 
-// Calculate net transaction amount after fees
-export const calculateNetAmount = (
-  amount: string, 
-  tokenHoldings: string = "0"
-): string => {
-  const amountBN = ethers.parseEther(amount);
-  const feeBN = ethers.parseEther(calculateTransactionFee(amount, tokenHoldings));
-  return ethers.formatEther(amountBN - feeBN);
-};
+/**
+ * Get tokenomics statistics and metrics
+ */
+export async function getTokenomicsStats(provider: ethers.JsonRpcProvider): Promise<{
+  totalFeeCollected: string;
+  totalBurned: string;
+  developerFundBalance: string;
+}> {
+  // Get developer fund balance
+  const devFundBalance = await provider.getBalance(DEVELOPER_FUND_ADDRESS);
+  
+  // In production, these would be fetched from contract events or a database
+  // For now, we'll return placeholder values based on current developer fund balance
+  // This assumes the 25/75 split has been maintained historically
+  const estimatedTotalFees = devFundBalance.mul(100).div(25);
+  const estimatedBurned = estimatedTotalFees.mul(75).div(100);
+  
+  return {
+    totalFeeCollected: ethers.formatEther(estimatedTotalFees),
+    totalBurned: ethers.formatEther(estimatedBurned),
+    developerFundBalance: ethers.formatEther(devFundBalance)
+  };
+}
 
-// Distribute transaction fee to appropriate wallets
-export const distributeFee = async (
-  feeAmount: string,
-  networkKey: 'pulsechain' | 'ethereum' = 'pulsechain'
-): Promise<void> => {
-  const provider = getProvider(networkKey);
-  const feeBN = ethers.parseEther(feeAmount);
-  
-  // Calculate individual amounts
-  const noExpectationsAmount = feeBN * BigInt(Math.floor(tokenomicsConfig.noExpectationsFundPercentage * 10000)) / BigInt(10000);
-  const buyAndBurnAmount = feeBN * BigInt(Math.floor(tokenomicsConfig.buyAndBurnPercentage * 10000)) / BigInt(10000);
-  
-  // In a real implementation, these would send actual transactions
-  console.log(`Distributing fees:
-    No Expectations Fund: ${ethers.formatEther(noExpectationsAmount)} 
-    Buy and Burn: ${ethers.formatEther(buyAndBurnAmount)}`
-  );
-};
+/**
+ * Interface for premium features
+ */
+export interface PremiumFeature {
+  id: string;
+  name: string;
+  description: string;
+  cost: number; // Cost in USD
+  available: boolean;
+}
 
-// Buy and burn mechanism for PLS and PulseX
-export const executeBuyAndBurn = async (
-  amount: string,
-  tokenToBurn: 'PLS' | 'PLSX',
-  networkKey: 'pulsechain' | 'ethereum' = 'pulsechain'
-): Promise<void> => {
-  // In a real implementation, this would:
-  // 1. Connect to a DEX like PulseX
-  // 2. Buy the specified token (PLS or PLSX)
-  // 3. Send tokens to a burn address or call a burn function
-  
-  console.log(`Executing buy and burn for ${amount} of ${tokenToBurn}`);
-  
-  // This would be the actual implementation using smart contracts
-  /*
-  const provider = getProvider(networkKey);
-  const signer = new ethers.Wallet(privateKey, provider);
-  const dexRouter = new ethers.Contract(dexRouterAddress, dexAbi, signer);
-  
-  // Buy tokens
-  const tx = await dexRouter.swapExactETHForTokens(
-    0, // Min amount out
-    [wethAddress, tokenAddress],
-    burnAddress,
-    Date.now() + 1000 * 60 * 10, // 10 min deadline
-    { value: ethers.parseEther(amount) }
-  );
-  
-  await tx.wait();
-  */
-};
+/**
+ * List of available premium features
+ */
+export const PREMIUM_FEATURES: PremiumFeature[] = [
+  {
+    id: 'advanced_ai',
+    name: 'Advanced AI Trading Strategies',
+    description: 'Access to advanced AI-generated trading strategies with higher profit potential',
+    cost: 9.99,
+    available: true
+  },
+  {
+    id: 'enhanced_privacy',
+    name: 'Enhanced Privacy Transactions',
+    description: 'Additional privacy features with advanced zero-knowledge proofs',
+    cost: 4.99,
+    available: true
+  },
+  {
+    id: 'priority_execution',
+    name: 'Priority Transaction Execution',
+    description: 'Get priority execution for your transactions during high network congestion',
+    cost: 2.99,
+    available: true
+  },
+  {
+    id: 'custom_alerts',
+    name: 'Custom Alerts & Notifications',
+    description: 'Set up custom alerts for price movements, smart contract events, and more',
+    cost: 1.99,
+    available: true
+  },
+  {
+    id: 'multichain_tx',
+    name: 'Multi-Chain Transaction Bundling',
+    description: 'Execute transactions across multiple chains in a single operation',
+    cost: 7.99,
+    available: false // Feature in development
+  }
+];
 
-// Staking rewards calculation
-export const calculateStakingRewards = (
-  stakedAmount: string, 
-  stakingDuration: number, // in days
-  annualYieldPercentage: number = 5 // 5% APY by default
-): string => {
-  const amountBN = ethers.parseEther(stakedAmount);
-  const dailyRate = annualYieldPercentage / 365;
-  const rewardPercentage = dailyRate * stakingDuration / 100;
+/**
+ * Get the list of premium features available to the user
+ * @param userSubscriptionLevel - User's subscription level (0=none, 1=basic, 2=premium, 3=enterprise)
+ * @returns Array of available premium features
+ */
+export function getUserPremiumFeatures(userSubscriptionLevel: number): PremiumFeature[] {
+  // Filter features based on subscription level
+  // Higher subscription levels get more features included
+  switch (userSubscriptionLevel) {
+    case 3: // Enterprise
+      return PREMIUM_FEATURES.filter(feature => feature.available);
+    case 2: // Premium
+      return PREMIUM_FEATURES.filter(feature => 
+        feature.available && (feature.id !== 'multichain_tx'));
+    case 1: // Basic
+      return PREMIUM_FEATURES.filter(feature => 
+        feature.available && ['advanced_ai', 'custom_alerts'].includes(feature.id));
+    case 0: // Free
+    default:
+      return [];
+  }
+}
+
+/**
+ * Check if a user has access to a specific premium feature
+ * @param featureId - ID of the feature to check
+ * @param userSubscriptionLevel - User's subscription level
+ * @param userPurchasedFeatures - Array of individually purchased feature IDs
+ * @returns Boolean indicating if the user has access
+ */
+export function hasFeatureAccess(
+  featureId: string, 
+  userSubscriptionLevel: number,
+  userPurchasedFeatures: string[] = []
+): boolean {
+  // User has access if they purchased the feature individually
+  if (userPurchasedFeatures.includes(featureId)) {
+    return true;
+  }
   
-  const rewardBN = amountBN * BigInt(Math.floor(rewardPercentage * 10000)) / BigInt(10000);
-  return ethers.formatEther(rewardBN);
-};
+  // Check if the feature is included in their subscription
+  const features = getUserPremiumFeatures(userSubscriptionLevel);
+  return features.some(feature => feature.id === featureId);
+}
