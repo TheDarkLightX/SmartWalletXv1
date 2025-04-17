@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import PrivacyMixer from '@/components/privacy/PrivacyMixer';
+import StealthAddressGenerator from '@/components/privacy/StealthAddressGenerator';
 import { Shield, Lock, Eye, Fingerprint, ActivitySquare } from 'lucide-react';
 
 /**
@@ -85,27 +86,11 @@ const PrivacyTools: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="stealth">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Fingerprint className="h-5 w-5" />
-                    Stealth Addresses
-                  </CardTitle>
-                  <CardDescription>
-                    Generate one-time addresses for enhanced receiving privacy
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-8 flex flex-col items-center justify-center space-y-4 text-center">
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Stealth address generator will be available in the next update.
-                    </p>
-                    <Button variant="outline" disabled>
-                      Generate Stealth Address
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <StealthAddressGenerator
+                privateKey={privateKey}
+                walletAddress={walletAddress}
+                network={network}
+              />
             </TabsContent>
           </Tabs>
         </div>
@@ -129,6 +114,14 @@ const PrivacyTools: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     Break the on-chain link between source and destination addresses by using
                     zero-knowledge proofs to mix your funds with others.
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Stealth Addresses</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use one-time addresses for receiving payments to prevent
+                    blockchain analysis from linking transactions to your identity.
                   </p>
                 </div>
                 
