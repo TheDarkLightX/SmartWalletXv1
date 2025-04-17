@@ -1,34 +1,29 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { networks, defaultNetwork } from '@/lib/ethers';
+import { networks } from '../lib/ethers';
 
-export type NetworkKey = 'pulsechain' | 'ethereum';
+type NetworkType = 'pulsechain' | 'ethereum';
 
 interface NetworkContextType {
-  currentNetwork: NetworkKey;
-  setNetwork: (network: NetworkKey) => void;
-  networkName: string;
-  nativeCurrencySymbol: string;
+  networkKey: NetworkType;
+  setNetworkKey: (network: NetworkType) => void;
+  networkConfig: typeof networks.pulsechain;
 }
 
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export function NetworkProvider({ children }: { children: ReactNode }) {
-  const [currentNetwork, setCurrentNetwork] = useState<NetworkKey>('pulsechain');
+  // Default to PulseChain
+  const [networkKey, setNetworkKey] = useState<NetworkType>('pulsechain');
 
-  const setNetwork = (network: NetworkKey) => {
-    setCurrentNetwork(network);
-  };
-
-  const networkName = networks[currentNetwork].name;
-  const nativeCurrencySymbol = networks[currentNetwork].nativeCurrency.symbol;
+  // Get the active network config
+  const networkConfig = networks[networkKey];
 
   return (
-    <NetworkContext.Provider 
-      value={{ 
-        currentNetwork, 
-        setNetwork, 
-        networkName,
-        nativeCurrencySymbol
+    <NetworkContext.Provider
+      value={{
+        networkKey,
+        setNetworkKey,
+        networkConfig
       }}
     >
       {children}
@@ -38,8 +33,14 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
 
 export function useNetwork() {
   const context = useContext(NetworkContext);
+  
   if (context === undefined) {
     throw new Error('useNetwork must be used within a NetworkProvider');
   }
-  return context;
+  
+  return {
+    network: context.networkKey,
+    setNetwork: context.setNetworkKey,
+    networkConfig: context.networkConfig
+  };
 }
