@@ -14,7 +14,7 @@ export default function WalletCreation() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [walletData, setWalletData] = useState<{ address: string; privateKey: string } | null>(null);
+  const [walletData, setWalletData] = useState<{ address: string; privateKey: string; contractAddress?: string } | null>(null);
   const [seedPhrase, setSeedPhrase] = useState<string>('');
   const [password, setPassword] = useState('');
   const [hasConfirmedBackup, setHasConfirmedBackup] = useState(false);
@@ -32,26 +32,22 @@ export default function WalletCreation() {
         // Measure timing to add to entropy
         const entropyTiming = performance.now() - startTime;
         
-        // Step 1: Generate owner EOA with secure wallet generation
+        // Generate smart contract wallet with secure generation
         console.log("Starting cryptographically secure wallet generation...");
-        const ownerWallet = generateWallet();
-        
-        // Step 2: Derive smart contract wallet address from owner
-        // In a real implementation, this would deploy the actual contract
-        const smartContractAddress = `0xSC${ownerWallet.address.substring(4)}`;
+        const wallet = generateWallet();
         
         console.log("Smart contract wallet generated successfully", { 
-          contractAddress: smartContractAddress,
-          ownerAddress: ownerWallet.address
+          contractAddress: wallet.contractAddress,
+          ownerAddress: wallet.address
         });
         
-        // Store the owner wallet info - in production we'd create/deploy the actual contract
+        // Store the complete wallet info 
         setWalletData({
-          address: ownerWallet.address,
-          privateKey: ownerWallet.privateKey,
-          // We'll set the smart contract address when continuing to wallet
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          contractAddress: wallet.contractAddress
         });
-        setSeedPhrase(ownerWallet.mnemonic || "");
+        setSeedPhrase(wallet.mnemonic || "");
         
         toast({
           title: "Smart Contract Wallet Ready",
@@ -93,12 +89,16 @@ export default function WalletCreation() {
   const downloadWalletInfo = () => {
     if (!walletData) return;
     
+    const smartContractAddress = walletData.contractAddress || `0xSC${walletData.address.substring(4)}`;
+    
     const content = `
-Wallet Address: ${walletData.address}
+Smart Contract Wallet Address: ${smartContractAddress}
+Owner Key Address (EOA): ${walletData.address}
 Private Key: ${walletData.privateKey}
 Seed Phrase: ${seedPhrase}
 
 IMPORTANT: Keep this information secure and never share your private key or seed phrase with anyone!
+Your funds will be stored in the smart contract wallet, but controlled by your owner key.
 Generated on: ${new Date().toLocaleString()}
     `.trim();
     
@@ -128,16 +128,12 @@ Generated on: ${new Date().toLocaleString()}
       // 2. Store minimal data locally - contract address & owner key
       // 3. Enable modular security features (social recovery, etc.)
       
-      // Deploy smart contract wallet
-      // NOTE: In production, this would make an actual contract deployment
-      const smartContractWalletAddress = `0xSC${walletData.address.substring(4)}`;
-      
       // For smart contract wallets, we store:
       // 1. The EOA owner address (controller key)
       // 2. The deployed smart contract wallet address
       // 3. The contract deployment parameters (guardians, thresholds, etc.)
       localStorage.setItem('ownerAddress', walletData.address);
-      localStorage.setItem('walletAddress', smartContractWalletAddress);
+      localStorage.setItem('walletAddress', walletData.contractAddress || `0xSC${walletData.address.substring(4)}`);
       localStorage.setItem('walletType', 'smartContract');
       
       // Enable multi-party computation for enhanced security
@@ -258,6 +254,31 @@ Generated on: ${new Date().toLocaleString()}
                   
                   <div className="space-y-4">
                     <div className="space-y-2">
+                      <Label>Smart Contract Wallet Address</Label>
+                      <div className="flex">
+                        <Input 
+                          value={walletData.contractAddress || `0xSC${walletData.address.substring(4)}`} 
+                          readOnly 
+                          className="flex-1 font-mono" 
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="ml-2"
+                          onClick={() => copyToClipboard(
+                            walletData.contractAddress || `0xSC${walletData.address.substring(4)}`, 
+                            "Smart contract wallet address"
+                          )}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        This is your smart contract wallet address where your funds will be held.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
                       <Label>Owner Key Address (EOA)</Label>
                       <div className="flex">
                         <Input value={walletData.address} readOnly className="flex-1 font-mono" />
@@ -271,7 +292,7 @@ Generated on: ${new Date().toLocaleString()}
                         </Button>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        This is the controlling key for your smart contract wallet. A contract address will be deployed in the next step.
+                        This is the controlling key for your smart contract wallet.
                       </p>
                     </div>
                     

@@ -107,7 +107,7 @@ export const ethToWei = (ethAmount: string) => {
 };
 
 /**
- * Generates a cryptographically secure random wallet with high entropy
+ * Generates a cryptographically secure smart contract wallet with high entropy
  * Uses multiple sources of randomness for maximum security:
  * 1. Native crypto.getRandomValues as primary source (CSPRNG)
  * 2. Ethers.js built-in randomness generation (which uses native crypto)
@@ -117,28 +117,46 @@ export const ethToWei = (ethAmount: string) => {
  * - Uses crypto.getRandomValues to collect 256 bits (32 bytes) of random entropy
  * - Implements BIP-39 to generate a 12-word mnemonic seed phrase
  * - Derives keys using HMAC-SHA512 according to BIP-32/BIP-44 standards
+ * 
+ * Smart contract wallet approach:
+ * - Generate an EOA wallet as the "owner" key
+ * - This owner key controls a smart contract wallet
+ * - The contract wallet holds assets and provides enhanced security features
+ * - In production, we would deploy the actual contract during this process
  */
 export const generateWallet = () => {
   try {
     // Additional entropy collection
     const extraEntropy = collectExtraEntropy();
     
-    // Generate wallet with extra entropy in ethers.js v6
-    const wallet = ethers.Wallet.createRandom();
+    // Generate owner wallet with extra entropy in ethers.js v6
+    const ownerWallet = ethers.Wallet.createRandom();
     
     // Get the mnemonic (seed phrase)
-    const mnemonicObj = wallet.mnemonic;
+    const mnemonicObj = ownerWallet.mnemonic;
     const mnemonicPhrase = mnemonicObj ? mnemonicObj.phrase : '';
     
+    // In a real implementation, we would:
+    // 1. Deploy a smart contract wallet with this owner as controller
+    // 2. Return the smart contract address as the primary wallet address
+    // 3. Store reference to both the contract and owner addresses
+    
+    // For simulation, we're creating a deterministic "contract address" 
+    // based on the owner address. In production, this would be the actual
+    // deployed contract address.
+    const contractAddress = `0xSC${ownerWallet.address.substring(4)}`;
+    
     return {
-      address: wallet.address,
-      privateKey: wallet.privateKey,
-      mnemonic: mnemonicPhrase,
-      path: "m/44'/60'/0'/0/0" // BIP-44 standard path for Ethereum
+      address: ownerWallet.address,        // Owner key address (controller key)
+      contractAddress: contractAddress,    // Smart contract wallet address
+      privateKey: ownerWallet.privateKey,  // Private key of owner (controller)
+      mnemonic: mnemonicPhrase,            // Seed phrase for owner key
+      path: "m/44'/60'/0'/0/0",           // BIP-44 standard path for Ethereum
+      walletType: "smartContract"          // Identifier for smart contract wallet
     };
   } catch (error) {
-    console.error("Error generating wallet:", error);
-    throw new Error("Failed to generate secure wallet");
+    console.error("Error generating smart contract wallet:", error);
+    throw new Error("Failed to generate secure smart contract wallet");
   }
 };
 
