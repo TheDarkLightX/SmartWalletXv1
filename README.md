@@ -1,110 +1,84 @@
-# SecureWallet: Privacy-Focused Smart Contract Wallet
+# SecureWallet - Smart Contract Wallet for PulseChain & Ethereum
 
-A next-generation security-focused smart contract wallet that combines advanced blockchain technologies with intuitive user experience design. Primarily focused on Pulsechain with Ethereum support.
+A next-generation security-focused smart contract wallet leveraging advanced blockchain technologies to create an intuitive and secure user experience for decentralized asset management.
 
-> **⚠️ SECURITY DISCLAIMER ⚠️**  
-> This software has not yet undergone a formal security audit. While we've implemented best practices throughout, 
-> users should be aware that they are using this wallet at their own risk. We recommend starting with small amounts
-> until the code has been properly audited by security professionals.
+## Features
 
-## Key Features
+- **Smart Contract Wallet Architecture**: Enhances security by separating owner key from assets held in a smart contract
+- **Multi-Party Computation (MPC)**: Advanced cryptographic protocols for securing private keys
+- **Social Recovery**: Recover wallet access if owner key is lost
+- **Privacy Features**: Implements ZK proofs, privacy mixer, range proofs, and stealth addresses
+- **AI Trading Strategies**: Generate and execute automated trading strategies
+- **Enhanced Security**: Advanced measures to protect against common attack vectors
+- **Cross-Platform Compatibility**: Works as standalone app, smartphone app, and browser extension
 
-### Advanced Privacy
-- **Zero-Knowledge Mixing**: Mix your transactions to break the link between sending and receiving addresses
-- **Stealth Addresses**: Generate one-time addresses for receiving payments privately
-- **Range Proofs**: Prove ownership of funds without revealing amounts
+## Tokenomics & Revenue Model
 
-### Robust Security
-- **Multi-Party Computation**: Secure key generation and signing
-- **Social Recovery**: Recover your wallet with the help of trusted guardians
-- **Hardware Wallet Support**: For additional security
-- **Secure Environment Detection**: Adapts security based on the environment
+- **Fee Distribution**:
+  - 25% to "No Expectations Fund" (Developer Fund at 0x3bE00923dF0D7fb06f79fc0628525b855797d8F8)
+  - 75% to Buy & Burn mechanism for PLS/PulseX
+- **Transaction Fee**: 0.2% base with token-based discounts up to 30%
+- **Premium Features**: Tiered subscription model with microtransactions
 
-### Smart Contract Functionality
-- **Automated Transaction Strategies**: Program your transactions
-- **Custom Fee Optimization**: Save on gas costs
-- **Cross-Chain Support**: Primarily Pulsechain with Ethereum compatibility
+## Technical Components
 
-## Tokenomics
-
-The wallet implements unique tokenomics with:
-- "No Expectations Fund" for developers (25% of fees to 0x3bE00923dF0D7fb06f79fc0628525b855797d8F8)
-- Buy & Burn mechanism for PLS/PulseX (75% of fees)
-- Premium features for additional revenue
+- **Frontend**: React with TypeScript
+- **Smart Contract**: Custom implementation with security focus
+- **Cryptography**: Implementations for ZK proofs, MPC, and privacy features
+- **AI Integration**: For generating and executing trading strategies
+- **Security**: Continuous auditing and monitoring
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js v16+
+- npm or yarn
+
 ### Installation
 
-#### Web App
+1. Clone the repository
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/securewallet.git
-cd securewallet
+git clone https://github.com/YourGitHubUsername/secure-wallet.git
+cd secure-wallet
+```
 
-# Install dependencies
+2. Install dependencies
+```bash
 npm install
+# or
+yarn
+```
 
-# Run the development server
+3. Start the development server
+```bash
 npm run dev
+# or
+yarn dev
 ```
 
-#### Browser Extension
-```bash
-# Build the extension
-node build-platforms.js extension production
+## Development Roadmap
 
-# Load the extension from dist/extension in your browser
-```
+- [x] Wallet Generation with Enhanced Cryptographic Security
+- [x] Smart Contract Wallet Implementation
+- [x] User Interface for Wallet Creation
+- [ ] Social Recovery Implementation
+- [ ] Advanced Privacy Features
+- [ ] AI Trading Strategy Integration
+- [ ] Mobile and Browser Extension Support
 
-### Usage
+## Contributing
 
-1. Create or import a wallet
-2. Use privacy tools to enhance transaction privacy
-3. Set up social recovery for added security
-4. Explore AI-powered trading strategies
+We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
-## Development
+## Security Audits
 
-### Prerequisites
-- Node.js (v18+)
-- npm or yarn
-- Git
-
-### Project Structure
-- `/client`: Frontend code
-- `/server`: Backend services
-- `/shared`: Shared types and utilities
-- `/tests`: Test files
-
-### Running Tests
-```bash
-npm test
-```
-
-### Security Considerations
-
-This wallet implements several security best practices:
-- Zero-knowledge proofs for privacy
-- Multi-party computation for sensitive operations
-- Hardware wallet integration
-- Social recovery mechanisms
-
-However, as noted in the disclaimer, the code has not yet undergone a formal security audit. We encourage security researchers to review our code and provide feedback.
-
-## Deployment
-
-For detailed deployment instructions, see:
-- [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) for server deployment options
-- [GITHUB-SETUP.md](GITHUB-SETUP.md) for GitHub repository setup
-- [QUICKSTART.md](QUICKSTART.md) for rapid deployment guides
+Security is our top priority. This codebase will undergo regular audits by third-party security firms. Audit reports will be published in the repository.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Disclaimer
 
-- PulseChain and Ethereum communities
-- Open-source privacy projects that inspired this work
-- Contributors and early adopters
+This software is in development and should be used at your own risk. Always backup your seed phrases and private keys securely.
