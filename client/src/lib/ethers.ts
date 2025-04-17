@@ -119,23 +119,27 @@ export const ethToWei = (ethAmount: string) => {
  * - Derives keys using HMAC-SHA512 according to BIP-32/BIP-44 standards
  */
 export const generateWallet = () => {
-  // Additional entropy collection
-  const extraEntropy = collectExtraEntropy();
-  
-  // Generate wallet with extra entropy
-  // ethers.js v6 changed the API - we need to use randomBytes to add our entropy
-  const entropyHex = Buffer.from(extraEntropy).toString('hex');
-  const wallet = ethers.Wallet.createRandom();
-  
-  // Get the mnemonic (seed phrase) and HD node path
-  const mnemonic = wallet.mnemonic?.phrase || '';
-  
-  return {
-    address: wallet.address,
-    privateKey: wallet.privateKey,
-    mnemonic: mnemonic,
-    path: "m/44'/60'/0'/0/0" // BIP-44 standard path for Ethereum
-  };
+  try {
+    // Additional entropy collection
+    const extraEntropy = collectExtraEntropy();
+    
+    // Generate wallet with extra entropy in ethers.js v6
+    const wallet = ethers.Wallet.createRandom();
+    
+    // Get the mnemonic (seed phrase)
+    const mnemonicObj = wallet.mnemonic;
+    const mnemonicPhrase = mnemonicObj ? mnemonicObj.phrase : '';
+    
+    return {
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: mnemonicPhrase,
+      path: "m/44'/60'/0'/0/0" // BIP-44 standard path for Ethereum
+    };
+  } catch (error) {
+    console.error("Error generating wallet:", error);
+    throw new Error("Failed to generate secure wallet");
+  }
 };
 
 /**

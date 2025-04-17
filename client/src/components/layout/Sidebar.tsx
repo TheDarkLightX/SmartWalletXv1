@@ -24,21 +24,23 @@ const Sidebar = ({ onClose }: SidebarProps) => {
           Navigation
         </div>
         
-        <Link href="/wallet/create">
-          <a className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
+        <div 
+          onClick={() => window.location.href = "/wallet/create"} 
+          className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
             isActiveRoute("/wallet/create") ? "bg-gray-100 dark:bg-dark-600" : ""
-          }`}>
-            <span>Create Wallet</span>
-          </a>
-        </Link>
+          }`}
+        >
+          <span>Create Wallet</span>
+        </div>
         
-        <Link href="/">
-          <a className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
+        <div 
+          onClick={() => window.location.href = "/"} 
+          className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 cursor-pointer ${
             isActiveRoute("/") ? "bg-gray-100 dark:bg-dark-600" : ""
-          }`}>
-            <span>Home</span>
-          </a>
-        </Link>
+          }`}
+        >
+          <span>Home</span>
+        </div>
       </nav>
       
       <div className="p-4 border-t border-gray-200 dark:border-dark-200">
