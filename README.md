@@ -1,4 +1,4 @@
-# SecureWallet - Smart Contract Wallet for PulseChain & Ethereum
+# SmartWalletXv1 - Smart Contract Wallet for PulseChain & Ethereum
 
 A next-generation security-focused smart contract wallet leveraging advanced blockchain technologies to create an intuitive and secure user experience for decentralized asset management.
 
@@ -39,8 +39,8 @@ A next-generation security-focused smart contract wallet leveraging advanced blo
 
 1. Clone the repository
 ```bash
-git clone https://github.com/YourGitHubUsername/secure-wallet.git
-cd secure-wallet
+git clone https://github.com/TheDarkLightX/SmartWalletXv1.git
+cd SmartWalletXv1
 ```
 
 2. Install dependencies
