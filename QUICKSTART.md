@@ -2,6 +2,11 @@
 
 This guide provides quick instructions to get your SecureWallet application up and running on GitHub and prepare it for production deployment.
 
+> **⚠️ SECURITY DISCLAIMER ⚠️**  
+> This software has not yet undergone a formal security audit. While we've implemented best practices throughout, 
+> users should be aware that they are using this wallet at their own risk. We recommend starting with small amounts
+> until the code has been properly audited by security professionals.
+
 ## 1. GitHub Repository Setup
 
 ### Prerequisites

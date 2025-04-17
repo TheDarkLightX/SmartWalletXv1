@@ -2,6 +2,11 @@
 
 This guide provides detailed instructions for deploying SecureWallet to production environments. Given the security-critical nature of the application, special attention must be paid to security best practices.
 
+> **⚠️ SECURITY DISCLAIMER ⚠️**  
+> This software has not yet undergone a formal security audit. While we've implemented best practices throughout, 
+> users should be aware that they are using this wallet at their own risk. We recommend starting with small amounts
+> until the code has been properly audited by security professionals.
+
 ## Prerequisites
 
 Before deploying to production, ensure you have:

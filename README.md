@@ -1,128 +1,110 @@
-# SecureWallet: Next-Generation Smart Contract Wallet
+# SecureWallet: Privacy-Focused Smart Contract Wallet
 
-A security-focused smart contract wallet leveraging advanced multi-party computation (MPC), zero-knowledge proofs, and AI-driven security protocols. Built primarily for PulseChain with Ethereum support.
+A next-generation security-focused smart contract wallet that combines advanced blockchain technologies with intuitive user experience design. Primarily focused on Pulsechain with Ethereum support.
 
-![SecureWallet](https://via.placeholder.com/1200x600/0066cc/ffffff?text=SecureWallet)
+> **⚠️ SECURITY DISCLAIMER ⚠️**  
+> This software has not yet undergone a formal security audit. While we've implemented best practices throughout, 
+> users should be aware that they are using this wallet at their own risk. We recommend starting with small amounts
+> until the code has been properly audited by security professionals.
 
-## 🔑 Key Features
+## Key Features
 
-- **Multi-Party Computation (MPC)** - Advanced security without single points of failure
-- **Zero-Knowledge Proof Privacy** - Enhanced transaction privacy similar to Tornado Cash
-- **AI-Powered Trading Strategies** - Intelligent automated trading options
-- **Social Recovery** - Never lose access to your funds
-- **Cross-Platform Support** - Web app, browser extension, and mobile apps
-- **Hardware Wallet Integration** - Secure hardware key support
-- **Passwordless Authentication** - WebAuthn support for biometric access
+### Advanced Privacy
+- **Zero-Knowledge Mixing**: Mix your transactions to break the link between sending and receiving addresses
+- **Stealth Addresses**: Generate one-time addresses for receiving payments privately
+- **Range Proofs**: Prove ownership of funds without revealing amounts
 
-## 🚀 Getting Started
+### Robust Security
+- **Multi-Party Computation**: Secure key generation and signing
+- **Social Recovery**: Recover your wallet with the help of trusted guardians
+- **Hardware Wallet Support**: For additional security
+- **Secure Environment Detection**: Adapts security based on the environment
 
-### Prerequisites
+### Smart Contract Functionality
+- **Automated Transaction Strategies**: Program your transactions
+- **Custom Fee Optimization**: Save on gas costs
+- **Cross-Chain Support**: Primarily Pulsechain with Ethereum compatibility
 
-- Node.js 20.x or higher
-- npm 9.x or higher
+## Tokenomics
+
+The wallet implements unique tokenomics with:
+- "No Expectations Fund" for developers (25% of fees to 0x3bE00923dF0D7fb06f79fc0628525b855797d8F8)
+- Buy & Burn mechanism for PLS/PulseX (75% of fees)
+- Premium features for additional revenue
+
+## Getting Started
 
 ### Installation
 
-1. Clone the repository
-   ```
-   git clone https://github.com/yourusername/securewallet.git
-   cd securewallet
-   ```
+#### Web App
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/securewallet.git
+cd securewallet
 
-2. Install dependencies
-   ```
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. Start the development server
-   ```
-   npm run dev
-   ```
-   
-4. Open your browser and navigate to `http://localhost:5000`
-
-## 📊 Tokenomics
-
-SecureWallet implements a transparent fee structure:
-
-- **Base Fee**: 0.2% on all transactions
-- **Distribution**: 25% to No Expectations Fund, 75% to Buy & Burn mechanism
-- **Token Discounts**: Hold tokens for fee discounts up to 30%
-- **Premium Features**: Additional revenue streams from advanced features
-
-### No Expectations Fund
-The No Expectations Fund (25% of all fees) is directed to address:
-```
-0x3bE00923dF0D7fb06f79fc0628525b855797d8F8
+# Run the development server
+npm run dev
 ```
 
-## 🔒 Security Features
+#### Browser Extension
+```bash
+# Build the extension
+node build-platforms.js extension production
 
-### Secure Environment Detection
-- Trusted Execution Environment (TEE)
-- Trusted Platform Module (TPM)
-- Intel SGX and AMD PSP support
-- Software fallback for devices without hardware security
-
-### Authentication Options
-- Traditional password-based authentication
-- WebAuthn passwordless authentication
-- Biometric security on supported devices
-- Hardware security key integration
-
-### Transaction Security
-- Multi-signature support
-- Time-locked transactions
-- Spending limits and control
-- AI-powered anomaly detection
-
-## 📱 Multi-Platform Support
-
-- **Web Application**: Full-featured web wallet
-- **Browser Extension**: Chrome, Firefox, and Edge supported
-- **Mobile Apps**: Android and iOS
-
-## 🧪 Testing
-
-Run the test suite:
-
-```
-node tests/demo-test.js
+# Load the extension from dist/extension in your browser
 ```
 
-For a comprehensive security audit:
+### Usage
 
+1. Create or import a wallet
+2. Use privacy tools to enhance transaction privacy
+3. Set up social recovery for added security
+4. Explore AI-powered trading strategies
+
+## Development
+
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
+- Git
+
+### Project Structure
+- `/client`: Frontend code
+- `/server`: Backend services
+- `/shared`: Shared types and utilities
+- `/tests`: Test files
+
+### Running Tests
+```bash
+npm test
 ```
-node tests/run-security-audit.ts
-```
 
-## 📋 Development Roadmap
+### Security Considerations
 
-- [ ] Version 1.0: Core wallet functionality
-- [ ] Version 1.1: Enhanced privacy features
-- [ ] Version 1.2: AI strategy optimization
-- [ ] Version 1.3: Advanced social recovery
-- [ ] Version 2.0: PulseChain-specific optimizations
+This wallet implements several security best practices:
+- Zero-knowledge proofs for privacy
+- Multi-party computation for sensitive operations
+- Hardware wallet integration
+- Social recovery mechanisms
 
-## 🤝 Contributing
+However, as noted in the disclaimer, the code has not yet undergone a formal security audit. We encourage security researchers to review our code and provide feedback.
 
-1. Fork the project
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Deployment
 
-## 📜 License
+For detailed deployment instructions, see:
+- [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) for server deployment options
+- [GITHUB-SETUP.md](GITHUB-SETUP.md) for GitHub repository setup
+- [QUICKSTART.md](QUICKSTART.md) for rapid deployment guides
 
-Distributed under the MIT License. See `LICENSE` for more information.
+## License
 
-## 📞 Contact
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Project Link: [https://github.com/yourusername/securewallet](https://github.com/yourusername/securewallet)
+## Acknowledgments
 
-## 🙏 Acknowledgements
-
-- [Ethers.js](https://docs.ethers.org/)
-- [React](https://reactjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [PulseChain Community](https://pulsechain.com/)
+- PulseChain and Ethereum communities
+- Open-source privacy projects that inspired this work
+- Contributors and early adopters

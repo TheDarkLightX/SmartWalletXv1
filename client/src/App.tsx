@@ -15,6 +15,7 @@ import AuthPage from "@/pages/auth-page";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
+import SecurityDisclaimer from "@/components/layout/SecurityDisclaimer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
@@ -65,6 +66,9 @@ function App() {
             <div className="flex-1 flex flex-col">
               <Header toggleSidebar={toggleSidebar} />
               <main className="flex-1">
+                <div className="container px-4 py-4">
+                  <SecurityDisclaimer />
+                </div>
                 <Router />
               </main>
               {isMobile && <MobileNav />}
