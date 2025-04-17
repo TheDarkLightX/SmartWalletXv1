@@ -63,11 +63,15 @@ export function calculateFee(amount: string, tokenBalance: number = 0): {
   const effectiveFeePercentage = FEE_PERCENTAGE * (1 - discountPercentage);
   
   // Calculate total fee
-  const totalFeeBN = amountBN.mul(Math.floor(effectiveFeePercentage * 10000)).div(10000);
+  const feeMultiplier = BigInt(Math.floor(effectiveFeePercentage * 10000));
+  const totalFeeBN = (amountBN * feeMultiplier) / BigInt(10000);
   
   // Calculate distribution
-  const developerFundBN = totalFeeBN.mul(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000)).div(10000);
-  const buyAndBurnBN = totalFeeBN.mul(Math.floor(BUY_BURN_PERCENTAGE * 10000)).div(10000);
+  const devFundMultiplier = BigInt(Math.floor(DEVELOPER_FUND_PERCENTAGE * 10000));
+  const developerFundBN = (totalFeeBN * devFundMultiplier) / BigInt(10000);
+  
+  const buyBurnMultiplier = BigInt(Math.floor(BUY_BURN_PERCENTAGE * 10000));
+  const buyAndBurnBN = (totalFeeBN * buyBurnMultiplier) / BigInt(10000);
   
   // Return values converted to strings
   return {

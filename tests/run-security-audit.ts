@@ -5,6 +5,47 @@
  * It checks for common security issues, best practices, and potential vulnerabilities.
  */
 
+interface SecurityIssue {
+  file: string;
+  severity: string;
+  issue: string;
+}
+
+type SecurityReport = {
+  critical: SecurityIssue[];
+  high: SecurityIssue[];
+  medium: SecurityIssue[];
+  low: SecurityIssue[];
+  info: SecurityIssue[];
+  summary: {
+    totalIssues: number;
+    criticalCount: number;
+    highCount: number;
+    mediumCount: number;
+    lowCount: number;
+    infoCount: number;
+    scannedFiles: number;
+  };
+};
+
+// Initialize empty report
+const securityReport: SecurityReport = {
+  critical: [],
+  high: [],
+  medium: [],
+  low: [],
+  info: [],
+  summary: {
+    totalIssues: 0,
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+    infoCount: 0,
+    scannedFiles: 0
+  }
+};
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
