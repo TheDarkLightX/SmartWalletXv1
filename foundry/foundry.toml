@@ -1,0 +1,20 @@
+[profile.default]
+# Compile sources from the root contracts folder so we can import with "../contracts/..."
+src = "../contracts"
+# Where build artifacts go; stays within foundry workspace
+out = "out"
+# Foundry tests will live in ./test relative to this file
+test = "./test"
+# Allow importing dependencies from node_modules
+libs = ["../node_modules"]
+
+# Solidity version aligned with project contracts
+solc_version = "0.8.23"
+optimizer = true
+optimizer_runs = 200
+
+# Remappings so imports like "@openzeppelin/..." resolve
+remappings = [
+  "@openzeppelin/=../node_modules/@openzeppelin/",
+  "@account-abstraction/=../node_modules/@account-abstraction/"
+] 
