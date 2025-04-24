@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23; // Standardized Pragma
+pragma solidity ^0.8.28; // Standardized Pragma
 
 import "@openzeppelin/contracts/access/Ownable.sol"; // OZ v4.x Ownable
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";

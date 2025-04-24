@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 // Correct Import Path for OpenZeppelin Contracts v4.x
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";

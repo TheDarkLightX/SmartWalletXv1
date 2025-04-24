@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23; // Standardized Pragma
+pragma solidity ^0.8.28; // Standardized Pragma
 
 // Correct Import Path for OpenZeppelin Contracts v4.x
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -9,46 +9,104 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // Use Ownable from OZ v4.x
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+// --- Interfaces ---
 /**
- * @title PrivacyAdapter (Final V4 - For Cursor)
- * @dev Bridges tokens to/from specific L1/L2 bridges (Aztec, ZkSync examples).
- * Includes SafeERC20, ReentrancyGuard, input validation, specific events,
- * and an owner-controlled emergency sweep function for stuck ERC20/ETH tokens.
- * Assumes external bridge calls revert on failure. Uses OZv4 compatible patterns.
+ * @title IAztecBridge
+ * @notice Interface for interacting with the Aztec privacy bridge
+ * @dev This interface defines the methods needed to deposit and withdraw tokens from Aztec
  */
-
-// Interface matching original Aztec interaction (example)
 interface IAztecBridge {
+    /**
+     * @notice Deposits tokens into the Aztec network
+     * @param token The address of the ERC20 token to deposit
+     * @param amount The amount of tokens to deposit
+     * @param recipient The recipient address on Aztec
+     * @return noteHash A unique identifier for this shielded transfer
+     */
     function deposit(address token, uint256 amount, address recipient) external returns (bytes32 noteHash);
+    
+    /**
+     * @notice Withdraws tokens from the Aztec network
+     * @param noteHash The note hash identifying the shielded tokens
+     * @param recipient The recipient address to receive the unshielded tokens
+     * @return amount The amount of tokens withdrawn
+     */
     function withdraw(bytes32 noteHash, address recipient) external returns (uint256 amount);
 }
 
-// Interface matching original ZkSync L1 interaction (example)
+/**
+ * @title IZkSyncL1Bridge
+ * @notice Interface for interacting with the ZkSync L1 bridge
+ * @dev This interface defines the methods needed to deposit and claim withdrawals from ZkSync
+ */
 interface IZkSyncL1Bridge {
+    /**
+     * @notice Deposits tokens or ETH to the ZkSync network
+     * @param l2Receiver The recipient address on ZkSync L2
+     * @param l1Token The L1 token address (address(0) for ETH)
+     * @param amount The amount to deposit
+     * @return l2TxHash The transaction hash on L2
+     */
     function deposit(address l2Receiver, address l1Token, uint256 amount) external payable returns (bytes32 l2TxHash);
+    
+    /**
+     * @notice Claims a withdrawal from ZkSync to L1
+     * @param l2Token The L2 token address
+     * @param amount The amount to withdraw
+     * @param proof The proof of withdrawal
+     */
     function claimWithdrawal(address l2Token, uint256 amount, bytes calldata proof) external;
 }
 
-// Inherit Ownable for sweep function access control
+/**
+ * @title PrivacyAdapter
+ * @notice A bridge for transferring tokens to and from privacy-focused Layer 2 solutions.
+ * This contract enables users to easily move assets between Ethereum and privacy networks
+ * like Aztec and ZkSync, providing an abstraction layer over the underlying bridge protocols.
+ * @dev Implements safe token handling with ReentrancyGuard and SafeERC20. Provides functions
+ * for shielding/unshielding tokens via Aztec and depositing/withdrawing via ZkSync.
+ * Includes emergency recovery functions for stuck tokens. Assumes external bridge calls
+ * will revert on failure. Uses OZv4 compatible patterns.
+ */
 contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
     // Use SafeERC20 for safeTransferFrom / safeTransfer / safeApprove (safeApprove exists in v4)
     using SafeERC20 for IERC20;
 
     // --- State ---
+    /** @notice Immutable reference to the Aztec bridge contract */
     IAztecBridge public immutable aztecBridge;
+    
+    /** @notice Immutable reference to the ZkSync L1 bridge contract */
     IZkSyncL1Bridge public immutable zksyncBridge;
 
     // --- Events ---
+    /** @dev Emitted when tokens are shielded through the Aztec bridge */
     event AztecShielded(address indexed sender, address indexed token, uint256 amount, address indexed recipient, bytes32 noteHash);
+    
+    /** @dev Emitted when tokens are unshielded from the Aztec bridge */
     event AztecUnshielded(address indexed caller, bytes32 indexed noteHash, address indexed recipient, uint256 amount);
+    
+    /** @dev Emitted when tokens are deposited to the ZkSync bridge */
     event ZkSyncDeposited(address indexed sender, address indexed token, uint256 amount, address indexed recipient, bytes32 l2TxHash);
+    
+    /** @dev Emitted when a ZkSync withdrawal is claimed */
     event ZkSyncWithdrawalClaimed(address indexed caller, address indexed token, uint256 amount, address indexed recipient);
+    
+    /** @dev Emitted when stuck ERC20 tokens are swept by the owner */
     event TokensSwept(address indexed token, address indexed recipient, uint256 amount);
-    event ETHSwept(address indexed recipient, uint256 amount); // Added ETH Event
+    
+    /** @dev Emitted when stuck ETH is swept by the owner */
+    event ETHSwept(address indexed recipient, uint256 amount);
 
     // --- Constructor ---
-    // Accepts bridge addresses and initial owner for Ownable functions
-    // Uses _transferOwnership for OZ v4.x compatibility
+    /**
+     * @notice Deploys the PrivacyAdapter with references to the required bridges.
+     * @dev Sets immutable references to the bridge contracts and transfers ownership
+     * to the provided initial owner. Uses OZv4 ownership pattern.
+     * @param _aztecBridgeAddr The address of the Aztec bridge contract
+     * @param _zksyncBridgeAddr The address of the ZkSync L1 bridge contract
+     * @param _initialOwner The address that will own this adapter and control sweep functions
+     */
     constructor(
         address _aztecBridgeAddr,
         address _zksyncBridgeAddr,
@@ -65,7 +123,14 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
     // --- Aztec Functions ---
 
     /**
-     * @notice Deposits tokens into the Aztec bridge.
+     * @notice Deposits tokens into the Aztec network for privacy.
+     * @dev Pulls tokens from the sender to this contract, approves the bridge to spend them,
+     * then calls the bridge's deposit function. Implements reentrancy protection and emits
+     * an event with all relevant information, including the returned note hash.
+     * @param token The address of the ERC20 token to shield
+     * @param amount The amount of tokens to shield
+     * @param recipient The recipient address on Aztec
+     * @return noteHash A unique identifier for this shielded transfer, returned by the bridge
      */
     function shieldAztec(address token, uint256 amount, address recipient)
         external
@@ -91,8 +156,13 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
     }
 
     /**
-     * @notice Withdraws tokens from the Aztec bridge using a note hash.
-     * @dev Assumes the bridge sends tokens directly to the recipient.
+     * @notice Withdraws tokens from the Aztec network back to Ethereum.
+     * @dev Calls the bridge's withdraw function and assumes the bridge sends tokens directly
+     * to the specified recipient. Implements reentrancy protection and validates that the
+     * withdrawn amount is greater than zero as a basic sanity check.
+     * @param noteHash The note hash identifying the shielded tokens
+     * @param recipient The address to receive the unshielded tokens
+     * @return withdrawnAmount The amount of tokens withdrawn, as reported by the bridge
      */
     function unshieldAztec(bytes32 noteHash, address recipient)
         external
@@ -114,6 +184,14 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
 
     /**
      * @notice Deposits tokens or ETH into the ZkSync L1 bridge.
+     * @dev Handles both ERC20 tokens and native ETH deposits. For ERC20 tokens, pulls 
+     * them from the sender and approves the bridge to spend them. For ETH, verifies the 
+     * sent value matches the specified amount. Implements reentrancy protection and 
+     * emits an event with all details including the L2 transaction hash.
+     * @param token The token address (address(0) for native ETH)
+     * @param amount The amount of tokens or ETH to deposit
+     * @param recipient The recipient address on ZkSync L2
+     * @return l2TxHash The transaction hash on L2, returned by the bridge
      */
     function depositZkSync(address token, uint256 amount, address recipient)
         external
@@ -148,8 +226,12 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
 
      /**
      * @notice Claims a withdrawal from the ZkSync L1 bridge.
-     * @dev Assumes the bridge holds withdrawn funds until claimed via proof.
-     * Sends claimed tokens to the caller (`msg.sender`).
+     * @dev Calls the bridge's claimWithdrawal function which should trigger the bridge to 
+     * send tokens to this contract. Then forwards the received tokens to the caller.
+     * Implements reentrancy protection and emits an event with all relevant details.
+     * @param l2Token The L2 token address to withdraw
+     * @param amount The amount to withdraw
+     * @param proof The proof of withdrawal required by the bridge
      */
     function claimZkSyncWithdrawal(address l2Token, uint256 amount, bytes calldata proof)
         external
@@ -174,7 +256,10 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
 
     /**
      * @notice Allows the owner to withdraw any ERC20 tokens mistakenly sent or stuck in this contract.
-     * @dev Added based on Audit #2 recommendation for emergency recovery.
+     * @dev Emergency recovery function callable only by the owner. Gets the contract's token 
+     * balance and transfers all tokens to the owner. Implements reentrancy protection and
+     * emits an event with the details of the sweep operation.
+     * @param token The address of the ERC20 token to sweep
      */
     function sweepERC20(address token) external onlyOwner nonReentrant {
         require(token != address(0), "PA: Invalid token address");
@@ -189,7 +274,9 @@ contract PrivacyAdapter is ReentrancyGuard, Ownable { // Inherits OZv4 Ownable
 
      /**
      * @notice Allows the owner to withdraw any native ETH mistakenly sent to this contract.
-     * @dev Added for completeness alongside sweepERC20.
+     * @dev Emergency recovery function callable only by the owner. Gets the contract's ETH
+     * balance and transfers all ETH to the owner using a low-level call. Implements reentrancy
+     * protection and checks the success of the ETH transfer, emitting an event with the details.
      */
     function sweepETH() external onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
